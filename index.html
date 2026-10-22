@@ -6,8 +6,10 @@
   <title>BizCard AI - Leitor de Cartões</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- SDK Oficial do Supabase -->
+  <!-- SDK do Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Leitor de Texto Real (OCR) no Navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen p-4 md:p-8">
 
@@ -15,13 +17,13 @@
     <header class="bg-white p-6 rounded-xl shadow-md flex justify-between items-center">
       <div>
         <h1 class="text-2xl font-bold text-blue-600"><i class="fa-solid me-2 fa-address-card"></i>BizCard AI</h1>
-        <p class="text-sm text-gray-500">Digitalização e Sincronização em Ficheiro Único com Supabase</p>
+        <p class="text-sm text-gray-500">Leitura Local OCR e Sincronização Supabase</p>
       </div>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       
-      <!-- Painel de Captura / Leitura -->
+      <!-- Painel de Captura -->
       <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
         <h2 class="text-lg font-semibold text-gray-700">Capturar / Enviar Cartão</h2>
         
@@ -110,11 +112,12 @@
     </div>
   </div>
 
+  <canvas id="canvas" class="hidden"></canvas>
+
   <script>
-    // Configurações do Supabase
+    // ⚠️ SUBSTITUA PELA SUA CHAVE REAL DO SUPABASE
     const SUPABASE_URL = "https://yhonxysuusxuvjkcpize.supabase.co";
-    // Cole a chave 'anon public' abaixo (Project Settings -> API -> anon public)
-    const SUPABASE_ANON_KEY = "SUA_CHAVE_ANON_PUBLIC_AQUI";
+    const SUPABASE_ANON_KEY = "SUA_CHAVE_ANON_PUBLIC_AQUI"; 
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -130,7 +133,6 @@
 
     let stream = null;
 
-    // Gestão da câmara
     toggleCameraBtn.addEventListener('click', async () => {
       if (stream) {
         stopCamera();
@@ -158,35 +160,45 @@
     }
 
     snapBtn.addEventListener('click', () => {
+      const canvas = document.getElementById('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
       stopCamera();
-      simulateScan();
+      processImageOCR(canvas.toDataURL('image/jpeg'));
     });
 
-    fileInput.addEventListener('change', () => {
-      simulateScan();
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => processImageOCR(evt.target.result);
+      reader.readAsDataURL(file);
     });
 
-    // Simulação da leitura de dados da imagem
-    function simulateScan() {
-      showStatus('A extrair dados do cartão...', 'info');
-      
-      setTimeout(() => {
-        const nomes = ['Rui Silva', 'Ana Santos', 'Gonçalo Pereira', 'Mariana Costa', 'Tiago Alves'];
-        const empresas = ['Tech Digital Lda', 'Inovação & Design', 'Consultoria Global', 'WebStudio Portugal'];
-        
-        const nomeSorteado = nomes[Math.floor(Math.random() * nomes.length)];
-        const empresaSorteada = empresas[Math.floor(Math.random() * empresas.length)];
+    // Leitura REAL do cartão usando Tesseract.js
+    async function processImageOCR(imageSrc) {
+      showStatus('A ler texto do cartão (aguarde alguns segundos)...', 'info');
+      try {
+        const result = await Tesseract.recognize(imageSrc, 'por');
+        const text = result.data.text;
 
-        document.getElementById('name').value = nomeSorteado;
-        document.getElementById('company').value = empresaSorteada;
-        document.getElementById('phone').value = '9' + Math.floor(10000000 + Math.random() * 90000000);
-        document.getElementById('email').value = nomeSorteado.toLowerCase().replace(' ', '.') + '@empresa.pt';
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        const phoneMatch = text.match(/(?:\+351\s*)?(?:9[1236]|2\d)\d{7}/) || text.match(/\d{9}/);
 
-        showStatus('Dados lidos e preenchidos com sucesso!', 'success');
-      }, 1000);
+        document.getElementById('name').value = lines[0] || '';
+        document.getElementById('company').value = lines[1] || '';
+        document.getElementById('phone').value = phoneMatch ? phoneMatch[0] : '';
+        document.getElementById('email').value = emailMatch ? emailMatch[0] : '';
+
+        showStatus('Texto extraído com sucesso do cartão!', 'success');
+      } catch (err) {
+        showStatus('Erro ao ler a imagem do cartão.', 'error');
+      }
     }
 
-    // Listar contactos do Supabase
+    // Carregar contactos do Supabase
     async function loadContacts(query = '') {
       try {
         let req = supabaseClient.from('contacts').select('*').order('id', { ascending: false });
@@ -200,7 +212,7 @@
         if (error) throw error;
 
         if (!contacts || contacts.length === 0) {
-          contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Nenhum contacto guardado na base de dados.</td></tr>';
+          contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Nenhum contacto guardado.</td></tr>';
           return;
         }
 
@@ -221,7 +233,7 @@
       }
     }
 
-    // Inserir / Atualizar contacto no Supabase
+    // Guardar / Atualizar no Supabase
     contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -235,6 +247,7 @@
 
       let result;
       if (id) {
+        result = await supabaseClient.from('supabaseClient').update(payload).eq('id', id);
         result = await supabaseClient.from('contacts').update(payload).eq('id', id);
       } else {
         result = await supabaseClient.from('contacts').insert([payload]);
@@ -243,14 +256,14 @@
       if (result.error) {
         showStatus('Erro ao guardar no Supabase: ' + result.error.message, 'error');
       } else {
-        showStatus('Contacto guardado diretamente no Supabase!', 'success');
+        showStatus('Contacto guardado com sucesso!', 'success');
         contactForm.reset();
         document.getElementById('contactId').value = '';
         loadContacts();
       }
     });
 
-    // Eliminar contacto no Supabase
+    // Eliminar do Supabase
     async function deleteContact(id) {
       if (!confirm('Deseja eliminar este contacto?')) return;
       const { error } = await supabaseClient.from('contacts').delete().eq('id', id);
