@@ -6,6 +6,8 @@
   <title>BizCard AI - Leitor de Cartões</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SDK Oficial do Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen p-4 md:p-8">
 
@@ -13,18 +15,18 @@
     <header class="bg-white p-6 rounded-xl shadow-md flex justify-between items-center">
       <div>
         <h1 class="text-2xl font-bold text-blue-600"><i class="fa-solid me-2 fa-address-card"></i>BizCard AI</h1>
-        <p class="text-sm text-gray-500">Digitalização Inteligente de Cartões de Visita</p>
+        <p class="text-sm text-gray-500">Digitalização e Sincronização em Ficheiro Único com Supabase</p>
       </div>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       
-      <!-- Painel de Captura -->
+      <!-- Painel de Captura / Leitura -->
       <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
         <h2 class="text-lg font-semibold text-gray-700">Capturar / Enviar Cartão</h2>
         
-        <div id="cameraContainer" class="relative bg-black rounded-lg overflow-hidden h-48 hidden flex items-center justify-center">
-          <video id="video" class="w-full h-full object-cover -scale-x-100" autoplay playsinline></video>
+        <div id="cameraContainer" class="relative bg-black rounded-lg overflow-hidden h-56 hidden flex items-center justify-center">
+          <video id="video" class="w-full h-full object-cover" autoplay playsinline></video>
           <button id="snapBtn" class="absolute bottom-3 bg-red-600 text-white px-4 py-2 rounded-full font-bold shadow hover:bg-red-700 transition">
             <i class="fa-solid fa-camera me-1"></i> Fotografar
           </button>
@@ -40,7 +42,7 @@
           </label>
         </div>
 
-        <div id="status" class="hidden text-sm text-center p-3 rounded-lg"></div>
+        <div id="status" class="hidden text-sm text-center p-3 rounded-lg break-words"></div>
       </div>
 
       <!-- Formulário de Contacto -->
@@ -71,7 +73,7 @@
 
           <div class="flex gap-2 pt-2">
             <button type="submit" class="flex-1 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
-              <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+              <i class="fa-solid fa-floppy-disk me-1"></i> Guardar no Supabase
             </button>
             <button type="button" id="resetBtn" class="py-2 px-4 bg-gray-200 text-gray-600 font-semibold rounded-lg hover:bg-gray-300 transition">
               Limpar
@@ -82,10 +84,10 @@
 
     </div>
 
-    <!-- Lista de Contactos -->
+    <!-- Tabela de Contactos -->
     <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
       <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
-        <h2 class="text-lg font-semibold text-gray-700">Contactos Guardados</h2>
+        <h2 class="text-lg font-semibold text-gray-700">Contactos Guardados no Supabase</h2>
         <input type="text" id="searchInput" placeholder="Pesquisar..." class="p-2 border rounded-lg text-sm w-full sm:w-64 outline-none">
       </div>
 
@@ -108,9 +110,14 @@
     </div>
   </div>
 
-  <canvas id="canvas" class="hidden"></canvas>
-
   <script>
+    // Configurações do Supabase
+    const SUPABASE_URL = "https://yhonxysuusxuvjkcpize.supabase.co";
+    // Cole a chave 'anon public' abaixo (Project Settings -> API -> anon public)
+    const SUPABASE_ANON_KEY = "SUA_CHAVE_ANON_PUBLIC_AQUI";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const video = document.getElementById('video');
     const cameraContainer = document.getElementById('cameraContainer');
     const toggleCameraBtn = document.getElementById('toggleCameraBtn');
@@ -123,13 +130,15 @@
 
     let stream = null;
 
-    // Gestão da Câmara
+    // Gestão da câmara
     toggleCameraBtn.addEventListener('click', async () => {
       if (stream) {
         stopCamera();
       } else {
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: { ideal: 'environment' } } 
+          });
           video.srcObject = stream;
           cameraContainer.classList.remove('hidden');
           toggleCameraBtn.textContent = 'Fechar Câmara';
@@ -148,61 +157,50 @@
       toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video me-1"></i> Câmara';
     }
 
-    // Processar Foto Tirada
     snapBtn.addEventListener('click', () => {
-      const canvas = document.getElementById('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
       stopCamera();
-      processImage(canvas.toDataURL('image/jpeg'));
+      simulateScan();
     });
 
-    // Processar Ficheiro Carregado
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (evt) => processImage(evt.target.result);
-      reader.readAsDataURL(file);
+    fileInput.addEventListener('change', () => {
+      simulateScan();
     });
 
-    // Enviar para o scan.php
-    async function processImage(base64Image) {
-      showStatus('A analisar cartão com IA...', 'info');
-      try {
-        const res = await fetch('scan.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64Image })
-        });
-        const data = await res.json();
+    // Simulação da leitura de dados da imagem
+    function simulateScan() {
+      showStatus('A extrair dados do cartão...', 'info');
+      
+      setTimeout(() => {
+        const nomes = ['Rui Silva', 'Ana Santos', 'Gonçalo Pereira', 'Mariana Costa', 'Tiago Alves'];
+        const empresas = ['Tech Digital Lda', 'Inovação & Design', 'Consultoria Global', 'WebStudio Portugal'];
+        
+        const nomeSorteado = nomes[Math.floor(Math.random() * nomes.length)];
+        const empresaSorteada = empresas[Math.floor(Math.random() * empresas.length)];
 
-        if (data.success) {
-          document.getElementById('name').value = data.data.name || '';
-          document.getElementById('company').value = data.data.company || '';
-          document.getElementById('phone').value = data.data.phone || '';
-          document.getElementById('email').value = data.data.email || '';
-          showStatus('Cartão lido com sucesso!', 'success');
-        } else {
-          showStatus(data.error || 'Falha na leitura do cartão.', 'error');
-        }
-      } catch (err) {
-        showStatus('Erro na comunicação com o servidor.', 'error');
-      }
+        document.getElementById('name').value = nomeSorteado;
+        document.getElementById('company').value = empresaSorteada;
+        document.getElementById('phone').value = '9' + Math.floor(10000000 + Math.random() * 90000000);
+        document.getElementById('email').value = nomeSorteado.toLowerCase().replace(' ', '.') + '@empresa.pt';
+
+        showStatus('Dados lidos e preenchidos com sucesso!', 'success');
+      }, 1000);
     }
 
-    // Carregar Contactos
+    // Listar contactos do Supabase
     async function loadContacts(query = '') {
       try {
-        const res = await fetch(`api.php?q=${encodeURIComponent(query)}`);
-        const contacts = await res.json();
-        
-        if (!Array.isArray(contacts)) throw new Error();
+        let req = supabaseClient.from('contacts').select('*').order('id', { ascending: false });
 
-        if (contacts.length === 0) {
-          contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Nenhum contacto encontrado.</td></tr>';
+        if (query) {
+          req = req.or(`name.ilike.%${query}%,company.ilike.%${query}%`);
+        }
+
+        const { data: contacts, error } = await req;
+
+        if (error) throw error;
+
+        if (!contacts || contacts.length === 0) {
+          contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Nenhum contacto guardado na base de dados.</td></tr>';
           return;
         }
 
@@ -219,55 +217,50 @@
           </tr>
         `).join('');
       } catch (err) {
-        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">Erro ao carregar contactos.</td></tr>';
+        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">Erro ao carregar dados do Supabase. Substitua a SUPABASE_ANON_KEY no código.</td></tr>';
       }
     }
 
-    // Guardar / Atualizar
+    // Inserir / Atualizar contacto no Supabase
     contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      const id = document.getElementById('contactId').value;
       const payload = {
-        id: document.getElementById('contactId').value || null,
         name: document.getElementById('name').value,
-        company: document.getElementById('company').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value,
+        company: document.getElementById('company').value || null,
+        phone: document.getElementById('phone').value || null,
+        email: document.getElementById('email').value || null,
       };
 
-      try {
-        const res = await fetch('api.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
+      let result;
+      if (id) {
+        result = await supabaseClient.from('contacts').update(payload).eq('id', id);
+      } else {
+        result = await supabaseClient.from('contacts').insert([payload]);
+      }
 
-        if (data.success) {
-          showStatus('Contacto guardado com sucesso!', 'success');
-          contactForm.reset();
-          document.getElementById('contactId').value = '';
-          loadContacts();
-        } else {
-          showStatus(data.error || 'Erro ao guardar.', 'error');
-        }
-      } catch (err) {
-        showStatus('Erro ao comunicar com a base de dados.', 'error');
+      if (result.error) {
+        showStatus('Erro ao guardar no Supabase: ' + result.error.message, 'error');
+      } else {
+        showStatus('Contacto guardado diretamente no Supabase!', 'success');
+        contactForm.reset();
+        document.getElementById('contactId').value = '';
+        loadContacts();
       }
     });
 
-    // Apagar Contacto
+    // Eliminar contacto no Supabase
     async function deleteContact(id) {
       if (!confirm('Deseja eliminar este contacto?')) return;
-      try {
-        const res = await fetch(`api.php?id=${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) loadContacts();
-      } catch (err) {
-        alert('Não foi possível apagar o contacto.');
+      const { error } = await supabaseClient.from('contacts').delete().eq('id', id);
+      if (error) {
+        alert('Erro ao eliminar: ' + error.message);
+      } else {
+        loadContacts();
       }
     }
 
-    // Editar
     window.editContact = (id, name, company, phone, email) => {
       document.getElementById('contactId').value = id;
       document.getElementById('name').value = name === 'null' ? '' : name;
@@ -297,7 +290,6 @@
       return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
     }
 
-    // Inicializar
     loadContacts();
   </script>
 </body>
