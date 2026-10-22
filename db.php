@@ -1,5 +1,4 @@
 <?php
-// Configurações da Base de Dados (Supabase PostgreSQL)
 $host = 'db.yhonxysuusxuvjkcpize.supabase.co';
 $port = '5432';
 $db   = 'postgres';
@@ -25,9 +24,6 @@ try {
     exit;
 }
 
-/**
- * Função utilitária para executar queries SQL em segurança
- */
 function dbQuery($sql, $params = []) {
     global $pdo;
     $stmt = $pdo->prepare($sql);
