@@ -1,131 +1,91 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
+header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
+    exit(0);
 }
 
-// Insira aqui a sua chave obtida no Google AI Studio (https://aistudio.google.com/)
-define('GEMINI_API_KEY', 'SUA_CHAVE_API_GEMINI_AQUI');
+// ⚠️ COLOQUE A SUA CHAVE DO GEMINI API AQUI:
+$geminiApiKey = "SUA_CHAVE_GEMINI_API_AQUI";
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Método não permitido. Utilize POST.']);
-    exit;
-}
-
-$rawInput = file_get_contents('php://input');
-$data = json_decode($rawInput, true);
-
-if (!$data || empty($data['image'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Nenhuma imagem enviada para análise.']);
-    exit;
-}
-
-$base64Image = $data['image'];
-$mimeType = !empty($data['mimeType']) ? $data['mimeType'] : 'image/jpeg';
-
-if (strpos($base64Image, ',') !== false) {
-    list(, $base64Image) = explode(',', $base64Image);
-}
-
-if (GEMINI_API_KEY === 'SUA_CHAVE_API_GEMINI_AQUI' || empty(GEMINI_API_KEY)) {
-    http_response_code(500);
+if (empty($geminiApiKey) || $geminiApiKey === "SUA_CHAVE_GEMINI_API_AQUI") {
     echo json_encode([
-        'success' => false, 
-        'message' => 'A chave da API Gemini não está configurada no ficheiro scan.php no servidor.'
+        'success' => false,
+        'error' => 'Insira a sua Chave API do Gemini no ficheiro scan.php.'
     ]);
     exit;
 }
+
+$input = json_decode(file_get_contents('php://input'), true);
+$imageBase64 = $input['image'] ?? '';
+
+if (empty($imageBase64)) {
+    echo json_encode(['success' => false, 'error' => 'Nenhuma imagem foi recebida.']);
+    exit;
+}
+
+if (preg_match('/^data:image\/(\w+);base64,/', $imageBase64, $type)) {
+    $imageBase64 = substr($imageBase64, strpos($imageBase64, ',') + 1);
+    $mimeType = strtolower($type[1]);
+    if ($mimeType === 'jpg') $mimeType = 'jpeg';
+} else {
+    $mimeType = 'jpeg';
+}
+
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $geminiApiKey;
+
+$prompt = "Analisa este cartão de visita e extrai os dados num JSON com as chaves exatas: \"name\", \"company\", \"phone\", \"email\". Retorna apenas o JSON puro sem markdown.";
 
 $payload = [
     'contents' => [
         [
             'parts' => [
-                ['text' => "Analisa este cartão de visita e extrai a informação em formato JSON com os campos: 'name', 'company', 'phone', 'email'."],
+                ['text' => $prompt],
                 [
-                    'inlineData' => [
-                        'mimeType' => $mimeType,
-                        'data' => $base64Image
+                    'inline_data' => [
+                        'mime_type' => "image/" . $mimeType,
+                        'data' => $imageBase64
                     ]
                 ]
-            ]
-        ]
-    ],
-    'generationConfig' => [
-        'responseMimeType' => 'application/json',
-        'responseSchema' => [
-            'type' => 'OBJECT',
-            'properties' => [
-                'name' => ['type' => 'STRING'],
-                'company' => ['type' => 'STRING'],
-                'phone' => ['type' => 'STRING'],
-                'email' => ['type' => 'STRING']
             ]
         ]
     ]
 ];
 
-$url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . GEMINI_API_KEY;
-
 $ch = curl_init($url);
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST => true,
-    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-    CURLOPT_POSTFIELDS => json_encode($payload),
-    CURLOPT_TIMEOUT => 30
-]);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
 curl_close($ch);
 
-if ($curlError) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Erro de comunicação no servidor: ' . $curlError]);
-    exit;
-}
-
 if ($httpCode !== 200) {
-    http_response_code($httpCode);
-    $errData = json_decode($response, true);
-    $errMsg = isset($errData['error']['message']) ? $errData['error']['message'] : 'Erro na API do Gemini.';
-    echo json_encode(['success' => false, 'message' => $errMsg]);
+    echo json_encode(['success' => false, 'error' => 'Erro na API Gemini: ' . $response]);
     exit;
 }
 
-$responseData = json_decode($response, true);
-$rawText = isset($responseData['candidates'][0]['content']['parts'][0]['text']) ? $responseData['candidates'][0]['content']['parts'][0]['text'] : null;
+$result = json_decode($response, true);
+$text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
+$cleanJson = preg_replace('/```(?:json)?\s*([\s\S]*?)\s*```/', '$1', trim($text));
+$extracted = json_decode($cleanJson, true);
 
-if (!$rawText) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'message' => 'Não foi possível extrair dados do cartão de visita.']);
-    exit;
-}
-
-$cleanJson = preg_replace('/^```json\s*|\s*```$/i', '', trim($rawText));
-$parsedData = json_decode($cleanJson, true);
-
-if (!$parsedData) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'message' => 'Formato de resposta da IA inválido.']);
+if (!$extracted) {
+    echo json_encode(['success' => false, 'error' => 'Não foi possível ler os dados da imagem.']);
     exit;
 }
 
 echo json_encode([
     'success' => true,
     'data' => [
-        'name' => isset($parsedData['name']) ? $parsedData['name'] : '',
-        'company' => isset($parsedData['company']) ? $parsedData['company'] : '',
-        'phone' => isset($parsedData['phone']) ? $parsedData['phone'] : '',
-        'email' => isset($parsedData['email']) ? $parsedData['email'] : ''
+        'name'    => $extracted['name'] ?? '',
+        'company' => $extracted['company'] ?? '',
+        'phone'   => $extracted['phone'] ?? '',
+        'email'   => $extracted['email'] ?? ''
     ]
 ]);
-?>
