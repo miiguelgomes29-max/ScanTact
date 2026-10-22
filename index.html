@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Inteligente de Contactos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col overflow-hidden">
+
+    <header class="bg-white shadow-sm z-10 flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 text-white p-2 rounded-lg">
+                    <i class="fa-solid fa-address-book"></i>
+                </div>
+                <h1 class="text-xl font-bold text-gray-900 hidden sm:block">Gestão de Contactos</h1>
+                <h1 class="text-xl font-bold text-gray-900 sm:hidden">Contactos</h1>
+            </div>
+            
+            <div class="flex-1 max-w-md">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" id="searchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition" placeholder="Pesquisar por nome ou empresa...">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex flex-col lg:flex-row gap-6 overflow-hidden">
+        
+        <!-- Left Column: Form -->
+        <div class="w-full lg:w-1/3 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-shrink-0 h-fit">
+            <div class="p-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-800" id="formTitle">Novo Contacto</h2>
+                <button id="cancelEditBtn" class="hidden text-sm text-gray-500 hover:text-red-500 transition">Cancelar Edição</button>
+            </div>
+            
+            <div class="p-5 space-y-4">
+                <!-- Smart Scan Buttons -->
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 text-center">
+                    <p class="text-sm text-blue-800 mb-3 font-medium">Tem um cartão de visita?</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button id="openCameraBtn" type="button" class="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition w-full">
+                            <i class="fa-solid fa-camera mr-2"></i> Abrir Câmara
+                        </button>
+
+                        <label for="cardImageInput" class="cursor-pointer inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition w-full">
+                            <i class="fa-solid fa-upload mr-2"></i> Ficheiro
+                        </label>
+                        <input type="file" id="cardImageInput" accept="image/*" class="hidden">
+                    </div>
+
+                    <div id="scanLoading" class="hidden flex-col items-center justify-center mt-3">
+                        <div class="loader mb-2"></div>
+                        <p class="text-xs text-blue-600 font-medium">A analisar cartão de visita com IA...</p>
+                    </div>
+                </div>
+
+                <hr class="border-gray-100">
+
+                <!-- Contact Form Inputs -->
+                <form id="contactForm" class="space-y-4">
+                    <input type="hidden" id="contactId">
+                    
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">Nome *</label>
+                        <input type="text" id="name" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    
+                    <div>
+                        <label for="company" class="block text-sm font-medium text-gray-700">Empresa</label>
+                        <input type="text" id="company" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700">Telefone</label>
+                        <input type="tel" id="phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    
+                    <button type="submit" id="saveBtn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition">
+                        <i class="fa-solid fa-save mr-2 mt-0.5"></i> Guardar Contacto
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="w-full lg:w-2/3 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full min-h-[400px]">
+            <div class="p-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-800">Os Meus Contactos</h2>
+                <span id="contactCount" class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs font-medium">0</span>
+            </div>
+            
+            <div id="contactListContainer" class="flex-1 overflow-y-auto p-5 bg-gray-50">
+                <div id="listLoading" class="flex flex-col items-center justify-center h-full text-gray-400">
+                    <div class="loader border-t-gray-400 mb-4"></div>
+                    <p>A carregar contactos...</p>
+                </div>
+
+                <div id="emptyState" class="hidden flex-col items-center justify-center h-full text-gray-400">
+                    <i class="fa-regular fa-address-book text-6xl mb-4 text-gray-300"></i>
+                    <p class="text-lg font-medium text-gray-600">Nenhum contacto encontrado</p>
+                    <p class="text-sm mt-1 text-center">Adicione um novo contacto manualmente ou leia um cartão de visita.</p>
+                </div>
+
+                <div id="contactsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg transform transition-transform duration-300 translate-y-20 opacity-0 flex items-center gap-3 z-50">
+        <i id="toastIcon" class="fa-solid fa-check-circle text-green-400"></i>
+        <span id="toastMessage">Operação realizada com sucesso.</span>
+    </div>
+
+    <!-- Live Camera Modal -->
+    <div id="cameraModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col">
+            <div class="p-4 bg-gray-900 text-white flex justify-between items-center">
+                <h3 class="font-semibold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-camera text-blue-400"></i> Fotografar Cartão de Visita
+                </h3>
+                <button id="closeCameraBtn" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="relative bg-black flex items-center justify-center min-h-[300px] overflow-hidden">
+                <video id="cameraVideo" autoplay playsinline class="w-full h-auto max-h-[60vh] object-contain -scale-x-1"></video>
+                <canvas id="cameraCanvas" class="hidden"></canvas>
+                
+                <div class="absolute inset-4 border-2 border-dashed border-blue-400/70 rounded-lg pointer-events-none flex items-center justify-center">
+                    <span class="text-xs text-white/80 bg-black/50 px-2 py-1 rounded backdrop-blur-sm">Alinhe o cartão dentro da área</span>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-900 flex justify-center gap-4 items-center">
+                <button id="captureBtn" type="button" class="w-16 h-16 rounded-full bg-white border-4 border-blue-500 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-lg">
+                    <div class="w-10 h-10 rounded-full bg-blue-600"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+        // Supabase configuration
+        const SUPABASE_URL = 'https://SEU_PROJETO.supabase.co';
+        const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANONIMA_SUPABASE';
+
+        let supabase = null;
+        let allContacts = [];
+        let isEditing = false;
+
+        // UI References
+        const form = document.getElementById('contactForm');
+        const formTitle = document.getElementById('formTitle');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const nameInput = document.getElementById('name');
+        const companyInput = document.getElementById('company');
+        const phoneInput = document.getElementById('phone');
+        const emailInput = document.getElementById('email');
+        const contactIdInput = document.getElementById('contactId');
+        
+        const cardImageInput = document.getElementById('cardImageInput');
+        const scanLoading = document.getElementById('scanLoading');
+
+        // Camera UI References
+        const openCameraBtn = document.getElementById('openCameraBtn');
+        const closeCameraBtn = document.getElementById('closeCameraBtn');
+        const cameraModal = document.getElementById('cameraModal');
+        const cameraVideo = document.getElementById('cameraVideo');
+        const cameraCanvas = document.getElementById('cameraCanvas');
+        const captureBtn = document.getElementById('captureBtn');
+        let mediaStream = null;
+
+        const searchInput = document.getElementById('searchInput');
+        const contactsGrid = document.getElementById('contactsGrid');
+        const listLoading = document.getElementById('listLoading');
+        const emptyState = document.getElementById('emptyState');
+        const contactCount = document.getElementById('contactCount');
+
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        const toastIcon = document.getElementById('toastIcon');
+
+        async function init() {
+            if (!SUPABASE_URL.includes('SEU_PROJETO')) {
+                supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                setupRealtimeSubscription();
+            } else {
+                console.warn("Supabase não configurado. Os dados serão geridos na memória local da sessão.");
+            }
+
+            await loadContacts();
+        }
+
+        async function loadContacts() {
+            listLoading.classList.remove('hidden');
+
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase
+                        .from('contacts')
+                        .select('*')
+                        .order('name', { ascending: true });
+
+                    if (error) throw error;
+                    allContacts = data || [];
+                } catch (err) {
+                    console.error("Erro no Supabase:", err);
+                    showToast("Erro ao carregar contactos da nuvem.", "error");
+                }
+            }
+
+            renderContacts();
+            listLoading.classList.add('hidden');
+        }
+
+        function setupRealtimeSubscription() {
+            if (!supabase) return;
+
+            supabase
+                .channel('public:contacts')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => {
+                    loadContacts();
+                })
+                .subscribe();
+        }
+
+        function renderContacts() {
+            const searchTerm = searchInput.value.toLowerCase();
+            contactsGrid.innerHTML = '';
+            
+            const filteredContacts = allContacts.filter(c => 
+                (c.name && c.name.toLowerCase().includes(searchTerm)) || 
+                (c.company && c.company.toLowerCase().includes(searchTerm))
+            );
+
+            contactCount.textContent = filteredContacts.length;
+
+            if (allContacts.length === 0) {
+                emptyState.classList.remove('hidden');
+                contactsGrid.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                contactsGrid.classList.remove('hidden');
+
+                if (filteredContacts.length === 0) {
+                    contactsGrid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8">Nenhum contacto corresponde à pesquisa.</div>`;
+                    return;
+                }
+
+                filteredContacts.forEach(contact => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition relative group";
+                    
+                    const initials = contact.name ? contact.name.substring(0, 2).toUpperCase() : '??';
+                    
+                    card.innerHTML = `
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg flex-shrink-0">
+                                ${initials}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-semibold text-gray-900 truncate" title="${contact.name}">${contact.name || 'Sem Nome'}</h3>
+                                ${contact.company ? `<p class="text-xs text-gray-500 truncate mb-1"><i class="fa-solid fa-building mr-1"></i>${contact.company}</p>` : ''}
+                                
+                                <div class="mt-2 space-y-1">
+                                    ${contact.phone ? `<p class="text-xs text-gray-600 truncate"><i class="fa-solid fa-phone text-gray-400 w-4 text-center mr-1"></i>${contact.phone}</p>` : ''}
+                                    ${contact.email ? `<p class="text-xs text-gray-600 truncate"><i class="fa-solid fa-envelope text-gray-400 w-4 text-center mr-1"></i><a href="mailto:${contact.email}" class="hover:text-blue-600">${contact.email}</a></p>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="absolute top-3 right-3 opacity-100 lg:opacity-0 group-hover:opacity-100 transition flex flex-col gap-2">
+                                <button class="edit-btn text-gray-400 hover:text-blue-600 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-gray-100 transition" data-id="${contact.id}" title="Editar">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button class="delete-btn text-gray-400 hover:text-red-600 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-gray-100 transition" data-id="${contact.id}" title="Eliminar">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    contactsGrid.appendChild(card);
+                });
+
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        startEdit(id);
+                    });
+                });
+
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        deleteContact(id);
+                    });
+                });
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const contactData = {
+                name: nameInput.value.trim(),
+                company: companyInput.value.trim(),
+                phone: phoneInput.value.trim(),
+                email: emailInput.value.trim()
+            };
+
+            const submitBtn = document.getElementById('saveBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>A guardar...';
+            submitBtn.disabled = true;
+
+            try {
+                if (supabase) {
+                    if (isEditing) {
+                        const id = contactIdInput.value;
+                        const { error } = await supabase
+                            .from('contacts')
+                            .update(contactData)
+                            .eq('id', id);
+
+                        if (error) throw error;
+                        showToast("Contacto atualizado!");
+                    } else {
+                        const { error } = await supabase
+                            .from('contacts')
+                            .insert([contactData]);
+
+                        if (error) throw error;
+                        showToast("Contacto guardado com sucesso!");
+                    }
+                    await loadContacts();
+                } else {
+                    if (isEditing) {
+                        const idx = allContacts.findIndex(c => c.id == contactIdInput.value);
+                        if (idx !== -1) allContacts[idx] = { id: contactIdInput.value, ...contactData };
+                    } else {
+                        allContacts.push({ id: Date.now(), ...contactData });
+                    }
+                    showToast("Guardado na memória local!");
+                    renderContacts();
+                }
+                resetForm();
+            } catch (error) {
+                console.error("Erro ao guardar:", error);
+                showToast("Erro ao guardar contacto.", "error");
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        async function deleteContact(id) {
+            try {
+                if (supabase) {
+                    const { error } = await supabase
+                        .from('contacts')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    showToast("Contacto eliminado!");
+                    await loadContacts();
+                } else {
+                    allContacts = allContacts.filter(c => c.id != id);
+                    renderContacts();
+                    showToast("Contacto eliminado!");
+                }
+            } catch (err) {
+                console.error("Erro ao eliminar:", err);
+                showToast("Erro ao eliminar contacto.", "error");
+            }
+        }
+
+        function startEdit(id) {
+            const contact = allContacts.find(c => c.id == id);
+            if (!contact) return;
+
+            isEditing = true;
+            contactIdInput.value = contact.id;
+            nameInput.value = contact.name || '';
+            companyInput.value = contact.company || '';
+            phoneInput.value = contact.phone || '';
+            emailInput.value = contact.email || '';
+
+            formTitle.textContent = "Editar Contacto";
+            cancelEditBtn.classList.remove('hidden');
+            nameInput.focus();
+        }
+
+        function resetForm() {
+            isEditing = false;
+            contactIdInput.value = '';
+            form.reset();
+            formTitle.textContent = "Novo Contacto";
+            cancelEditBtn.classList.add('hidden');
+        }
+
+        cancelEditBtn.addEventListener('click', resetForm);
+
+        async function processCardBase64(rawBase64, originalMimeType) {
+            scanLoading.classList.remove('hidden');
+
+            try {
+                const response = await fetch('scan.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: rawBase64,
+                        mimeType: originalMimeType || 'image/jpeg'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    const extractedData = result.data;
+                    
+                    nameInput.value = extractedData.name || '';
+                    companyInput.value = extractedData.company || '';
+                    phoneInput.value = extractedData.phone || '';
+                    emailInput.value = extractedData.email || '';
+                    
+                    showToast("Dados extraídos com sucesso! Por favor verifique antes de guardar.");
+                    
+                    [nameInput, companyInput, phoneInput, emailInput].forEach(el => {
+                        if(el.value) {
+                            el.classList.add('bg-blue-50', 'ring-2', 'ring-blue-300');
+                            setTimeout(() => el.classList.remove('bg-blue-50', 'ring-2', 'ring-blue-300'), 2500);
+                        }
+                    });
+                } else {
+                    throw new Error(result.message || 'Falha na leitura do cartão.');
+                }
+
+            } catch (error) {
+                console.error("Scan error:", error);
+                showToast(`Falha na leitura: ${error.message}`, "error");
+            } finally {
+                scanLoading.classList.add('hidden');
+            }
+        }
+
+        // Camera handlers
+        openCameraBtn.addEventListener('click', async () => {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                cameraVideo.srcObject = mediaStream;
+                cameraModal.classList.remove('hidden');
+            } catch (err) {
+                console.error("Acesso à câmara falhou:", err);
+                showToast("Não foi possível aceder à câmara.", "error");
+            }
+        });
+
+        function stopCameraStream() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            cameraVideo.srcObject = null;
+            cameraModal.classList.add('hidden');
+        }
+
+        closeCameraBtn.addEventListener('click', stopCameraStream);
+
+        captureBtn.addEventListener('click', () => {
+            if (!mediaStream) return;
+
+            const context = cameraCanvas.getContext('2d');
+            cameraCanvas.width = cameraVideo.videoWidth;
+            cameraCanvas.height = cameraVideo.videoHeight;
+            
+            context.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
+            
+            const dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.85);
+            const base64Data = dataUrl.split(',')[1];
+            
+            stopCameraStream();
+            processCardBase64(base64Data, 'image/jpeg');
+        });
+
+        // File upload handler
+        cardImageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            e.target.value = '';
+
+            try {
+                const base64Data = await readFileAsBase64(file);
+                await processCardBase64(base64Data, file.type || 'image/jpeg');
+            } catch (err) {
+                console.error("Erro ao carregar ficheiro:", err);
+                showToast("Erro ao processar imagem.", "error");
+            }
+        });
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Live Search listener
+        searchInput.addEventListener('input', renderContacts);
+
+        // Toast feedback handler
+        let toastTimeout;
+        function showToast(message, type = "success") {
+            toastMessage.textContent = message;
+            toastIcon.className = type === "error" ? "fa-solid fa-circle-exclamation text-red-400" : "fa-solid fa-check-circle text-green-400";
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
