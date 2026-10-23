@@ -3,81 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BizCard AI - Leitor de Cartões</title>
+  <title>BizCard OCR - Leitor Local sem IA</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- SDK do Supabase -->
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Leitor OCR Tesseract.js -->
+  <!-- OCR Local Tesseract.js -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-</head>
-<body class="bg-gray-100 text-gray-800 min-h-screen p-4 md:p-8">
 
-  <div class="max-w-4xl mx-auto space-y-6">
-    <header class="bg-white p-6 rounded-xl shadow-md flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl font-bold text-blue-600"><i class="fa-solid me-2 fa-address-card"></i>BizCard AI</h1>
-        <p class="text-sm text-gray-500">Leitura Inteligente OCR e Sincronização Supabase</p>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(229, 231, 235, 0.8);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-800 min-h-screen relative overflow-x-hidden pb-12">
+
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/30 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="relative z-10 max-w-5xl mx-auto px-4 pt-6 space-y-6">
+    
+    <header class="glass-card p-6 rounded-2xl shadow-2xl flex justify-between items-center border border-white/20">
+      <div class="flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-500/30">
+          <i class="fa-solid fa-align-left"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            BizCard OCR
+          </h1>
+          <p class="text-xs font-medium text-slate-500">Extrator de Texto Bruto & Sincronização Supabase</p>
+        </div>
       </div>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Painel de Captura -->
-      <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
-        <h2 class="text-lg font-semibold text-gray-700">Capturar / Enviar Cartão</h2>
-        
-        <div id="cameraContainer" class="relative bg-black rounded-lg overflow-hidden h-56 hidden flex items-center justify-center">
+      <!-- Captura e Texto Bruto -->
+      <div class="lg:col-span-6 glass-card p-6 rounded-2xl shadow-xl space-y-4 border border-white/40">
+        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-camera text-blue-600"></i> 1. Captura & Leitura
+        </h2>
+
+        <!-- Viewfinder da Câmara -->
+        <div id="cameraContainer" class="relative bg-slate-950 rounded-xl overflow-hidden h-48 hidden flex items-center justify-center border border-slate-800">
           <video id="video" class="w-full h-full object-cover" autoplay playsinline></video>
-          <button id="snapBtn" class="absolute bottom-3 bg-red-600 text-white px-4 py-2 rounded-full font-bold shadow hover:bg-red-700 transition">
-            <i class="fa-solid fa-camera me-1"></i> Fotografar
+          <button id="snapBtn" class="absolute bottom-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-bold text-xs shadow-lg flex items-center gap-2">
+            <i class="fa-solid fa-camera"></i> Fotografar
           </button>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <button id="toggleCameraBtn" class="w-full py-2 px-4 bg-blue-50 text-blue-600 font-semibold rounded-lg hover:bg-blue-100 border border-blue-200 transition">
-            <i class="fa-solid fa-video me-1"></i> Câmara
+          <button id="toggleCameraBtn" class="py-2.5 px-4 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 border border-blue-200 shadow-sm transition text-xs flex items-center justify-center gap-2">
+            <i class="fa-solid fa-video"></i> <span>Câmara</span>
           </button>
-          <label class="w-full py-2 px-4 bg-gray-50 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 border border-gray-200 text-center cursor-pointer transition">
-            <i class="fa-solid fa-upload me-1"></i> Ficheiro
+          <label class="py-2.5 px-4 bg-slate-50 text-slate-700 font-bold rounded-xl hover:bg-slate-100 border border-slate-200 shadow-sm text-center cursor-pointer transition text-xs flex items-center justify-center gap-2">
+            <i class="fa-solid fa-upload text-indigo-600"></i> <span>Ficheiro</span>
             <input type="file" id="fileInput" accept="image/*" class="hidden">
           </label>
         </div>
 
-        <div id="status" class="hidden text-sm text-center p-3 rounded-lg break-words"></div>
+        <div id="status" class="hidden text-xs font-semibold text-center p-2.5 rounded-xl"></div>
+
+        <!-- Caixa de Texto Bruto Lido pelo OCR -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 flex justify-between">
+            <span>Texto Bruto Extraído (OCR)</span>
+            <span class="text-[10px] text-slate-400 font-normal">Pode editar manualmente</span>
+          </label>
+          <textarea id="rawText" rows="6" placeholder="O texto reconhecido no cartão aparecerá aqui..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition resize-y"></textarea>
+        </div>
       </div>
 
-      <!-- Formulário de Contacto -->
-      <div class="bg-white p-6 rounded-xl shadow-md">
-        <h2 class="text-lg font-semibold text-gray-700 mb-4">Dados do Contacto</h2>
+      <!-- Formulário Mapeado -->
+      <div class="lg:col-span-6 glass-card p-6 rounded-2xl shadow-xl border border-white/40 space-y-4">
+        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-id-card text-indigo-600"></i> 2. Campos Organizados
+        </h2>
+
         <form id="contactForm" class="space-y-3">
           <input type="hidden" id="contactId">
           
           <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase">Nome *</label>
-            <input type="text" id="name" required class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome *</label>
+            <input type="text" id="name" required placeholder="Nome detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase">Empresa / Cargo</label>
-            <input type="text" id="company" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Empresa / Cargo</label>
+            <input type="text" id="company" placeholder="Empresa detetada..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase">Telefone</label>
-            <input type="text" id="phone" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
+            <input type="text" id="phone" placeholder="Telefone detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase">Email</label>
-            <input type="email" id="email" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+            <input type="email" id="email" placeholder="Email detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
           </div>
 
-          <div class="flex gap-2 pt-2">
-            <button type="submit" class="flex-1 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
-              <i class="fa-solid fa-floppy-disk me-1"></i> Guardar no Supabase
+          <div class="flex items-center gap-2 pt-2">
+            <button type="submit" class="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-md hover:scale-[1.01] active:scale-95 transition-all text-xs flex items-center justify-center gap-2">
+              <i class="fa-solid fa-floppy-disk"></i> Guardar no Supabase
             </button>
-            <button type="button" id="resetBtn" class="py-2 px-4 bg-gray-200 text-gray-600 font-semibold rounded-lg hover:bg-gray-300 transition">
+            <button type="button" id="resetBtn" class="py-3 px-4 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition text-xs">
               Limpar
             </button>
           </div>
@@ -87,15 +125,17 @@
     </div>
 
     <!-- Tabela de Contactos -->
-    <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
+    <div class="glass-card p-6 rounded-2xl shadow-xl border border-white/40 space-y-4">
       <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
-        <h2 class="text-lg font-semibold text-gray-700">Contactos Guardados no Supabase</h2>
-        <input type="text" id="searchInput" placeholder="Pesquisar..." class="p-2 border rounded-lg text-sm w-full sm:w-64 outline-none">
+        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-database text-blue-600"></i> Base de Dados Supabase
+        </h2>
+        <input type="text" id="searchInput" placeholder="Pesquisar..." class="w-full sm:w-64 p-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500">
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-gray-50 border-b">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-100/80 border-b border-slate-200 uppercase text-[10px] font-extrabold text-slate-500">
             <tr>
               <th class="p-3">Nome</th>
               <th class="p-3">Empresa</th>
@@ -104,18 +144,19 @@
               <th class="p-3 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody id="contactsTableBody" class="divide-y">
-            <tr><td colspan="5" class="p-4 text-center text-gray-400">A carregar contactos...</td></tr>
+          <tbody id="contactsTableBody" class="divide-y divide-slate-100">
+            <tr><td colspan="5" class="p-4 text-center text-slate-400">A carregar contactos...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
+
   </div>
 
   <canvas id="canvas" class="hidden"></canvas>
 
   <script>
-    // ⚠️ SUBSTITUA PELA SUA CHAVE PUBLISHABLE / ANON DO SUPABASE
+    // CONFIGURAÇÕES DO SUPABASE
     const SUPABASE_URL = "https://yhonxysuusxuvjkcpize.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_sEFa9_zBdnkXGaqpmoymXA_qm33wCpo"; 
 
@@ -127,9 +168,10 @@
     const snapBtn = document.getElementById('snapBtn');
     const fileInput = document.getElementById('fileInput');
     const statusDiv = document.getElementById('status');
+    const rawTextArea = document.getElementById('rawText');
     const contactForm = document.getElementById('contactForm');
-    const contactsTableBody = document.getElementById('contactsTableBody');
     const searchInput = document.getElementById('searchInput');
+    const contactsTableBody = document.getElementById('contactsTableBody');
 
     let stream = null;
 
@@ -143,7 +185,7 @@
           });
           video.srcObject = stream;
           cameraContainer.classList.remove('hidden');
-          toggleCameraBtn.textContent = 'Fechar Câmara';
+          toggleCameraBtn.innerHTML = '<i class="fa-solid fa-xmark text-red-500"></i> <span>Fechar Câmara</span>';
         } catch (err) {
           showStatus('Não foi possível aceder à câmara.', 'error');
         }
@@ -156,7 +198,7 @@
         stream = null;
       }
       cameraContainer.classList.add('hidden');
-      toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video me-1"></i> Câmara';
+      toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video text-blue-600"></i> <span>Câmara</span>';
     }
 
     snapBtn.addEventListener('click', () => {
@@ -166,7 +208,7 @@
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0);
       stopCamera();
-      processImageOCR(canvas.toDataURL('image/jpeg', 0.95));
+      runOCR(canvas.toDataURL('image/jpeg', 0.95));
     });
 
     fileInput.addEventListener('change', (e) => {
@@ -183,85 +225,79 @@
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0);
-          processImageOCR(canvas.toDataURL('image/jpeg', 0.95));
+          runOCR(canvas.toDataURL('image/jpeg', 0.95));
         };
         img.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     });
 
-    // Leitura do cartão com suporte a formato JSON
-    async function processImageOCR(imageSrc) {
-      showStatus('A analisar o texto do cartão...', 'info');
+    // 1. Corre o OCR do Tesseract e escreve o texto bruto na caixa de texto
+    async function runOCR(imageSrc) {
+      showStatus('A ler texto do cartão com Tesseract OCR...', 'info');
       try {
         const result = await Tesseract.recognize(imageSrc, 'por+eng');
-        const rawText = result.data.text;
+        const text = result.data.text;
 
-        const extracted = parseBusinessCardText(rawText);
+        rawTextArea.value = text;
+        showStatus('Texto extraído! A mapear campos...', 'success');
 
-        document.getElementById('name').value = extracted.name;
-        document.getElementById('company').value = extracted.company;
-        document.getElementById('phone').value = extracted.phone;
-        document.getElementById('email').value = extracted.email;
-
-        showStatus('Leitura concluída com sucesso!', 'success');
+        // Mapeia automaticamente o texto bruto para os campos
+        parseRawTextToFields(text);
       } catch (err) {
-        showStatus('Erro ao ler a imagem do cartão.', 'error');
+        showStatus('Erro ao ler a imagem.', 'error');
       }
     }
 
-    // Algoritmo especial para extração de cartões normais e em formato JSON
-    function parseBusinessCardText(text) {
+    // 2. Sempre que a caixa de texto bruto for alterada manualmente, re-mapeia os campos
+    rawTextArea.addEventListener('input', () => {
+      parseRawTextToFields(rawTextArea.value);
+    });
+
+    // 3. Função que analisa o texto bruto e preenche os inputs do formulário
+    function parseRawTextToFields(text) {
+      if (!text) return;
+
       let name = '';
       let company = '';
       let phone = '';
       let email = '';
 
-      const lowerText = text.toLowerCase();
+      // Extrair Email
+      const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (emailMatch) email = emailMatch[0];
 
-      // Deteção direta para este cartão da Digitextus (Michael Teixeira)
-      if (lowerText.includes('digitextus') || lowerText.includes('michael') || lowerText.includes('json')) {
-        name = "Michael Teixeira";
-        company = "CEO Digitextus";
-        email = "michael.teixeira@digitextus.pt";
-        phone = "+351 967 605 414";
-        return { name, company, phone, email };
-      }
+      // Extrair Telefone
+      const phoneMatch = text.match(/(?:\+351\s*)?(?:9[1236]|2\d)[\s.-]?\d{3}[\s.-]?\d{3,4}|\b\d{9}\b/);
+      if (phoneMatch) phone = phoneMatch[0].trim();
 
-      // 1. Extração por sintaxe de Chaves JSON ("name": "...", "email": "...")
+      // Extração para sintaxe estilo JSON ("name": "...", "email": "...")
       const jsonName = text.match(/["']?name["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
-      const jsonTitle = text.match(/["']?(?:title|company)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
-      const jsonEmail = text.match(/["']?email["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
-      const jsonPhone = text.match(/["']?phone["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+      const jsonCompany = text.match(/["']?(?:title|company)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
 
       if (jsonName) name = jsonName[1].trim();
-      if (jsonTitle) company = jsonTitle[1].trim();
-      if (jsonEmail) email = jsonEmail[1].trim();
-      if (jsonPhone) phone = jsonPhone[1].trim();
+      if (jsonCompany) company = jsonCompany[1].trim();
 
-      // 2. Fallbacks com expressões regulares
-      if (!email) {
-        const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-        if (emailMatch) email = emailMatch[0];
+      // Limpeza de linhas para procurar Nome e Empresa caso não seja sintaxe JSON
+      const lines = text.split('\n')
+        .map(l => l.replace(/^[0-9]+\s*/, '').replace(/[^a-zA-Z0-9áàâãéèêíóòôõúçÁÀÂÃÉÈÍÓÒÔÕÚÇ@.\s\-\+]/g, '').trim())
+        .filter(l => l.length > 2 && !l.includes('{') && !l.includes('}'));
+
+      if (!name && lines.length > 0) {
+        name = lines[0];
+      }
+      if (!company && lines.length > 1) {
+        company = lines[1];
       }
 
-      if (!phone) {
-        const phoneMatch = text.match(/(?:\+351\s*)?(?:9[1236]|2\d)[\s.-]?\d{3}[\s.-]?\d{3,4}|\b\d{9}\b/);
-        if (phoneMatch) phone = phoneMatch[0];
-      }
-
-      if (!name) {
-        const cleanLines = text.split('\n')
-          .map(l => l.replace(/^[0-9]+\s*/, '').replace(/[^a-zA-Z0-9áàâãéèêíóòôõúçÁÀÂÃÉÈÍÓÒÔÕÚÇ@.\s\-\+]/g, '').trim())
-          .filter(l => l.length > 2 && !l.includes('{') && !l.includes('}'));
-        if (cleanLines.length > 0) name = cleanLines[0];
-        if (!company && cleanLines.length > 1) company = cleanLines[1];
-      }
-
-      return { name, company, phone, email };
+      // Preenche os campos
+      document.getElementById('name').value = name;
+      document.getElementById('company').value = company;
+      document.getElementById('phone').value = phone;
+      document.getElementById('email').value = email;
     }
 
-    // Carregar contactos do Supabase
+    // Carregar Contactos do Supabase
     async function loadContacts(query = '') {
       try {
         let req = supabaseClient.from('contacts').select('*').order('id', { ascending: false });
@@ -271,32 +307,31 @@
         }
 
         const { data: contacts, error } = await req;
-
         if (error) throw error;
 
         if (!contacts || contacts.length === 0) {
-          contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Nenhum contacto guardado na base de dados.</td></tr>';
+          contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum contacto guardado na base de dados.</td></tr>';
           return;
         }
 
         contactsTableBody.innerHTML = contacts.map(c => `
-          <tr class="hover:bg-gray-50">
-            <td class="p-3 font-medium">${escapeHtml(c.name)}</td>
-            <td class="p-3 text-gray-600">${escapeHtml(c.company || '-')}</td>
-            <td class="p-3 text-gray-600">${escapeHtml(c.phone || '-')}</td>
-            <td class="p-3 text-gray-600">${escapeHtml(c.email || '-')}</td>
-            <td class="p-3 text-right space-x-2">
-              <button onclick="editContact(${c.id}, '${escapeHtml(c.name)}', '${escapeHtml(c.company)}', '${escapeHtml(c.phone)}', '${escapeHtml(c.email)}')" class="text-blue-600 hover:text-blue-800"><i class="fa-solid fa-pen"></i></button>
-              <button onclick="deleteContact(${c.id})" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-3 font-bold text-slate-800">${escapeHtml(c.name)}</td>
+            <td class="p-3 text-slate-600">${escapeHtml(c.company || '-')}</td>
+            <td class="p-3 text-slate-600">${escapeHtml(c.phone || '-')}</td>
+            <td class="p-3 text-slate-600">${escapeHtml(c.email || '-')}</td>
+            <td class="p-3 text-right space-x-1">
+              <button onclick="editContact(${c.id}, '${escapeHtml(c.name)}', '${escapeHtml(c.company)}', '${escapeHtml(c.phone)}', '${escapeHtml(c.email)}')" class="p-1.5 text-blue-600 hover:text-blue-800"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteContact(${c.id})" class="p-1.5 text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `).join('');
       } catch (err) {
-        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar do Supabase. Verifique a chave de API em SUPABASE_ANON_KEY.</td></tr>';
+        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar do Supabase. Verifique se a tabela "contacts" existe e tem acesso público.</td></tr>';
       }
     }
 
-    // Guardar / Atualizar no Supabase
+    // Submeter Formulário para o Supabase
     contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -318,8 +353,9 @@
       if (result.error) {
         showStatus('Erro ao guardar no Supabase: ' + result.error.message, 'error');
       } else {
-        showStatus('Contacto guardado com sucesso na base de dados!', 'success');
+        showStatus('Contacto guardado com sucesso!', 'success');
         contactForm.reset();
+        rawTextArea.value = '';
         document.getElementById('contactId').value = '';
         loadContacts();
       }
@@ -329,11 +365,8 @@
     async function deleteContact(id) {
       if (!confirm('Deseja eliminar este contacto?')) return;
       const { error } = await supabaseClient.from('contacts').delete().eq('id', id);
-      if (error) {
-        alert('Erro ao eliminar: ' + error.message);
-      } else {
-        loadContacts();
-      }
+      if (error) alert('Erro ao eliminar: ' + error.message);
+      else loadContacts();
     }
 
     window.editContact = (id, name, company, phone, email) => {
@@ -347,16 +380,18 @@
 
     document.getElementById('resetBtn').addEventListener('click', () => {
       contactForm.reset();
+      rawTextArea.value = '';
       document.getElementById('contactId').value = '';
     });
 
     searchInput.addEventListener('input', (e) => loadContacts(e.target.value));
 
     function showStatus(msg, type) {
-      statusDiv.classList.remove('hidden', 'bg-blue-100', 'text-blue-700', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
-      if (type === 'info') statusDiv.classList.add('bg-blue-100', 'text-blue-700');
-      if (type === 'success') statusDiv.classList.add('bg-green-100', 'text-green-700');
-      if (type === 'error') statusDiv.classList.add('bg-red-100', 'text-red-700');
+      statusDiv.classList.remove('hidden', 'bg-blue-50', 'text-blue-700', 'border-blue-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200', 'bg-rose-50', 'text-rose-700', 'border-rose-200');
+      statusDiv.classList.add('border');
+      if (type === 'info') statusDiv.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+      if (type === 'success') statusDiv.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+      if (type === 'error') statusDiv.classList.add('bg-rose-50', 'text-rose-700', 'border-rose-200');
       statusDiv.textContent = msg;
     }
 
