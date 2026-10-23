@@ -6,8 +6,10 @@
   <title>BizCard AI - Leitor de Cartões</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- SDK do Supabase -->
+  <!-- SDK Oficial do Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Leitor OCR Tesseract.js -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen p-4 md:p-8">
 
@@ -15,13 +17,13 @@
     <header class="bg-white p-6 rounded-xl shadow-md flex justify-between items-center">
       <div>
         <h1 class="text-2xl font-bold text-blue-600"><i class="fa-solid me-2 fa-address-card"></i>BizCard AI</h1>
-        <p class="text-sm text-gray-500">Digitalização de Cartões e Sincronização Supabase</p>
+        <p class="text-sm text-gray-500">Leitura Inteligente OCR e Sincronização Supabase</p>
       </div>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       
-      <!-- Captura de Imagem -->
+      <!-- Painel de Captura -->
       <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
         <h2 class="text-lg font-semibold text-gray-700">Capturar / Enviar Cartão</h2>
         
@@ -110,10 +112,11 @@
     </div>
   </div>
 
+  <canvas id="canvas" class="hidden"></canvas>
+
   <script>
-    // Configurações do Supabase
+    // ⚠️ SUBSTITUA COM A SUA CHAVE PUBLISHABLE (sb_publishable_...) OU ANON DO SUPABASE
     const SUPABASE_URL = "https://yhonxysuusxuvjkcpize.supabase.co";
-    // ⚠️ COLE AQUI A CHAVE COPIADA DO SUPABASE:
     const SUPABASE_ANON_KEY = "sb_publishable_sEFa9_zBdnkXGaqpmoymXA_qm33wCpo"; 
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -136,7 +139,7 @@
       } else {
         try {
           stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: { ideal: 'environment' } } 
+            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } 
           });
           video.srcObject = stream;
           cameraContainer.classList.remove('hidden');
@@ -157,32 +160,117 @@
     }
 
     snapBtn.addEventListener('click', () => {
+      const canvas = document.getElementById('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
       stopCamera();
-      processCardImage();
+      processImageOCR(canvas.toDataURL('image/jpeg', 0.9));
     });
 
-    fileInput.addEventListener('change', () => {
-      processCardImage();
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = (evt) => {
+        img.onload = () => {
+          const canvas = document.getElementById('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          processImageOCR(canvas.toDataURL('image/jpeg', 0.9));
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
     });
 
-    // Processamento do cartão (preenchimento automático limpo para simulação)
-    function processCardImage() {
-      showStatus('A analisar cartão...', 'info');
-      
-      setTimeout(() => {
-        const listaNomes = ['Rui Silva', 'Ana Santos', 'Gonçalo Pereira', 'Mariana Costa', 'Tiago Alves'];
-        const listaEmpresas = ['Tech Digital Lda', 'Inovação & Design', 'Consultoria Global', 'WebStudio Portugal'];
-        
-        const nomeSorteado = listaNomes[Math.floor(Math.random() * listaNomes.length)];
-        const empresaSorteada = listaEmpresas[Math.floor(Math.random() * listaEmpresas.length)];
+    // Processamento do cartão com OCR e extração estruturada de campos
+    async function processImageOCR(imageSrc) {
+      showStatus('A analisar o texto do cartão...', 'info');
+      try {
+        const result = await Tesseract.recognize(imageSrc, 'por+eng');
+        const rawText = result.data.text;
 
-        document.getElementById('name').value = nomeSorteado;
-        document.getElementById('company').value = empresaSorteada;
-        document.getElementById('phone').value = '9' + Math.floor(10000000 + Math.random() * 90000000);
-        document.getElementById('email').value = nomeSorteado.toLowerCase().replace(' ', '.').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '@empresa.pt';
+        const extracted = parseBusinessCardText(rawText);
 
-        showStatus('Cartão lido com sucesso!', 'success');
-      }, 800);
+        document.getElementById('name').value = extracted.name;
+        document.getElementById('company').value = extracted.company;
+        document.getElementById('phone').value = extracted.phone;
+        document.getElementById('email').value = extracted.email;
+
+        showStatus('Leitura concluída com sucesso!', 'success');
+      } catch (err) {
+        showStatus('Erro ao ler a imagem do cartão.', 'error');
+      }
+    }
+
+    // Algoritmo de filtragem e identificação de campos do cartão
+    function parseBusinessCardText(text) {
+      const lines = text.split('\n')
+        .map(l => l.trim().replace(/[^a-zA-Z0-9áàâãéèêíóòôõúçÁÀÂÃÉÈÍÓÒÔÕÚÇ@.\s\-\+]/g, ''))
+        .filter(l => l.length > 2);
+
+      let email = '';
+      let phone = '';
+      let company = '';
+      let name = '';
+
+      // 1. Extrair Email
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+      const emailMatch = text.match(emailRegex);
+      if (emailMatch) email = emailMatch[0];
+
+      // 2. Extrair Telefone
+      const phoneRegex = /(?:\+351\s*)?(?:9[1236]|2\d)[\s.-]?\d{3}[\s.-]?\d{3,4}|\b\d{9}\b/;
+      const phoneMatch = text.match(phoneRegex);
+      if (phoneMatch) phone = phoneMatch[0].replace(/\s+/g, '');
+
+      // Palavras-chave típicas de Empresas
+      const companyKeywords = ['lda', 's.a.', 'sa', 'ltd', 'inc', 'corp', 'studio', 'tech', 'group', 'consulting', 'consultoria', 'agência', 'agencia', 'serviços', 'servicos', 'design', 'unipessoal', 'solutions'];
+
+      // Linhas limpas sem email e telefone
+      const candidateLines = lines.filter(line => {
+        if (email && line.includes(email)) return false;
+        if (phone && line.replace(/\s+/g, '').includes(phone)) return false;
+        return true;
+      });
+
+      // 3. Identificar Empresa por palavra-chave
+      for (let i = 0; i < candidateLines.length; i++) {
+        const lineLower = candidateLines[i].toLowerCase();
+        if (companyKeywords.some(kw => lineLower.includes(kw))) {
+          company = candidateLines[i];
+          candidateLines.splice(i, 1);
+          break;
+        }
+      }
+
+      // 4. Identificar Nome (Procura linha com iniciais maiúsculas)
+      for (let i = 0; i < candidateLines.length; i++) {
+        const line = candidateLines[i];
+        if (/^[A-ZÀ-Ú][a-zà-ú']+(\s+[A-ZÀ-Ú][a-zà-ú']+)+$/.test(line)) {
+          name = line;
+          candidateLines.splice(i, 1);
+          break;
+        }
+      }
+
+      // Fallbacks para garantir preenchimento caso a deteção estrita falhe
+      if (!name && candidateLines.length > 0) {
+        name = candidateLines[0];
+        candidateLines.shift();
+      }
+      if (!company && candidateLines.length > 0) {
+        company = candidateLines[0];
+      }
+
+      return { name, company, phone, email };
     }
 
     // Carregar contactos do Supabase
@@ -216,7 +304,7 @@
           </tr>
         `).join('');
       } catch (err) {
-        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar dados do Supabase. Verifique a chave de API na linha 120.</td></tr>';
+        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar do Supabase. Verifique a chave em SUPABASE_ANON_KEY.</td></tr>';
       }
     }
 
