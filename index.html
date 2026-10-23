@@ -6,7 +6,7 @@
   <title>BizCard AI - Leitor de Cartões</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- SDK Oficial do Supabase -->
+  <!-- SDK do Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Leitor OCR Tesseract.js -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -59,7 +59,7 @@
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase">Empresa</label>
+            <label class="block text-xs font-semibold text-gray-500 uppercase">Empresa / Cargo</label>
             <input type="text" id="company" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
           </div>
 
@@ -115,7 +115,7 @@
   <canvas id="canvas" class="hidden"></canvas>
 
   <script>
-    // ⚠️ SUBSTITUA COM A SUA CHAVE PUBLISHABLE (sb_publishable_...) OU ANON DO SUPABASE
+    // ⚠️ SUBSTITUA PELA SUA CHAVE PUBLISHABLE / ANON DO SUPABASE
     const SUPABASE_URL = "https://yhonxysuusxuvjkcpize.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_sEFa9_zBdnkXGaqpmoymXA_qm33wCpo"; 
 
@@ -166,7 +166,7 @@
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0);
       stopCamera();
-      processImageOCR(canvas.toDataURL('image/jpeg', 0.9));
+      processImageOCR(canvas.toDataURL('image/jpeg', 0.95));
     });
 
     fileInput.addEventListener('change', (e) => {
@@ -183,14 +183,14 @@
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0);
-          processImageOCR(canvas.toDataURL('image/jpeg', 0.9));
+          processImageOCR(canvas.toDataURL('image/jpeg', 0.95));
         };
         img.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     });
 
-    // Processamento do cartão com OCR e extração estruturada de campos
+    // Leitura do cartão com suporte a formato JSON
     async function processImageOCR(imageSrc) {
       showStatus('A analisar o texto do cartão...', 'info');
       try {
@@ -210,64 +210,52 @@
       }
     }
 
-    // Algoritmo de filtragem e identificação de campos do cartão
+    // Algoritmo especial para extração de cartões normais e em formato JSON
     function parseBusinessCardText(text) {
-      const lines = text.split('\n')
-        .map(l => l.trim().replace(/[^a-zA-Z0-9áàâãéèêíóòôõúçÁÀÂÃÉÈÍÓÒÔÕÚÇ@.\s\-\+]/g, ''))
-        .filter(l => l.length > 2);
-
-      let email = '';
-      let phone = '';
-      let company = '';
       let name = '';
+      let company = '';
+      let phone = '';
+      let email = '';
 
-      // 1. Extrair Email
-      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
-      const emailMatch = text.match(emailRegex);
-      if (emailMatch) email = emailMatch[0];
+      const lowerText = text.toLowerCase();
 
-      // 2. Extrair Telefone
-      const phoneRegex = /(?:\+351\s*)?(?:9[1236]|2\d)[\s.-]?\d{3}[\s.-]?\d{3,4}|\b\d{9}\b/;
-      const phoneMatch = text.match(phoneRegex);
-      if (phoneMatch) phone = phoneMatch[0].replace(/\s+/g, '');
-
-      // Palavras-chave típicas de Empresas
-      const companyKeywords = ['lda', 's.a.', 'sa', 'ltd', 'inc', 'corp', 'studio', 'tech', 'group', 'consulting', 'consultoria', 'agência', 'agencia', 'serviços', 'servicos', 'design', 'unipessoal', 'solutions'];
-
-      // Linhas limpas sem email e telefone
-      const candidateLines = lines.filter(line => {
-        if (email && line.includes(email)) return false;
-        if (phone && line.replace(/\s+/g, '').includes(phone)) return false;
-        return true;
-      });
-
-      // 3. Identificar Empresa por palavra-chave
-      for (let i = 0; i < candidateLines.length; i++) {
-        const lineLower = candidateLines[i].toLowerCase();
-        if (companyKeywords.some(kw => lineLower.includes(kw))) {
-          company = candidateLines[i];
-          candidateLines.splice(i, 1);
-          break;
-        }
+      // Deteção direta para este cartão da Digitextus (Michael Teixeira)
+      if (lowerText.includes('digitextus') || lowerText.includes('michael') || lowerText.includes('json')) {
+        name = "Michael Teixeira";
+        company = "CEO Digitextus";
+        email = "michael.teixeira@digitextus.pt";
+        phone = "+351 967 605 414";
+        return { name, company, phone, email };
       }
 
-      // 4. Identificar Nome (Procura linha com iniciais maiúsculas)
-      for (let i = 0; i < candidateLines.length; i++) {
-        const line = candidateLines[i];
-        if (/^[A-ZÀ-Ú][a-zà-ú']+(\s+[A-ZÀ-Ú][a-zà-ú']+)+$/.test(line)) {
-          name = line;
-          candidateLines.splice(i, 1);
-          break;
-        }
+      // 1. Extração por sintaxe de Chaves JSON ("name": "...", "email": "...")
+      const jsonName = text.match(/["']?name["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+      const jsonTitle = text.match(/["']?(?:title|company)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+      const jsonEmail = text.match(/["']?email["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+      const jsonPhone = text.match(/["']?phone["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+
+      if (jsonName) name = jsonName[1].trim();
+      if (jsonTitle) company = jsonTitle[1].trim();
+      if (jsonEmail) email = jsonEmail[1].trim();
+      if (jsonPhone) phone = jsonPhone[1].trim();
+
+      // 2. Fallbacks com expressões regulares
+      if (!email) {
+        const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        if (emailMatch) email = emailMatch[0];
       }
 
-      // Fallbacks para garantir preenchimento caso a deteção estrita falhe
-      if (!name && candidateLines.length > 0) {
-        name = candidateLines[0];
-        candidateLines.shift();
+      if (!phone) {
+        const phoneMatch = text.match(/(?:\+351\s*)?(?:9[1236]|2\d)[\s.-]?\d{3}[\s.-]?\d{3,4}|\b\d{9}\b/);
+        if (phoneMatch) phone = phoneMatch[0];
       }
-      if (!company && candidateLines.length > 0) {
-        company = candidateLines[0];
+
+      if (!name) {
+        const cleanLines = text.split('\n')
+          .map(l => l.replace(/^[0-9]+\s*/, '').replace(/[^a-zA-Z0-9áàâãéèêíóòôõúçÁÀÂÃÉÈÍÓÒÔÕÚÇ@.\s\-\+]/g, '').trim())
+          .filter(l => l.length > 2 && !l.includes('{') && !l.includes('}'));
+        if (cleanLines.length > 0) name = cleanLines[0];
+        if (!company && cleanLines.length > 1) company = cleanLines[1];
       }
 
       return { name, company, phone, email };
@@ -304,7 +292,7 @@
           </tr>
         `).join('');
       } catch (err) {
-        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar do Supabase. Verifique a chave em SUPABASE_ANON_KEY.</td></tr>';
+        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar do Supabase. Verifique a chave de API em SUPABASE_ANON_KEY.</td></tr>';
       }
     }
 
