@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BizCard OCR - Leitor Local sem IA</title>
+  <title>BizCard OCR v2 - Gestão de Contactos & Categorias</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -28,18 +28,19 @@
     <div class="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
   </div>
 
-  <div class="relative z-10 max-w-5xl mx-auto px-4 pt-6 space-y-6">
+  <div class="relative z-10 max-w-6xl mx-auto px-4 pt-6 space-y-6">
     
+    <!-- Cabeçalho -->
     <header class="glass-card p-6 rounded-2xl shadow-2xl flex justify-between items-center border border-white/20">
       <div class="flex items-center space-x-4">
         <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-500/30">
-          <i class="fa-solid fa-align-left"></i>
+          <i class="fa-solid fa-users-gear"></i>
         </div>
         <div>
           <h1 class="text-2xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            BizCard OCR
+            BizCard OCR <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold align-middle">v2.0</span>
           </h1>
-          <p class="text-xs font-medium text-slate-500">Extrator de Texto Bruto & Sincronização Supabase</p>
+          <p class="text-xs font-medium text-slate-500">Gestão de Contactos, Categorias e Leitura OCR</p>
         </div>
       </div>
     </header>
@@ -86,7 +87,7 @@
         </div>
       </div>
 
-      <!-- Formulário Mapeado -->
+      <!-- Formulário Mapeado com Novo Campo Tipo de Contacto -->
       <div class="lg:col-span-6 glass-card p-6 rounded-2xl shadow-xl border border-white/40 space-y-4">
         <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
           <i class="fa-solid fa-id-card text-indigo-600"></i> 2. Campos Organizados
@@ -100,19 +101,33 @@
             <input type="text" id="name" required placeholder="Nome detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Empresa / Cargo</label>
-            <input type="text" id="company" placeholder="Empresa detetada..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Empresa / Cargo</label>
+              <input type="text" id="company" placeholder="Empresa detetada..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+            </div>
+
+            <!-- NOVO CAMPO: Tipo de Contacto -->
+            <div>
+              <label class="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">Tipo de Contacto *</label>
+              <select id="tipo" required class="w-full p-2.5 bg-blue-50/60 border border-blue-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-bold text-slate-700">
+                <option value="Potencial Cliente">Potencial Cliente</option>
+                <option value="Cliente">Cliente</option>
+                <option value="Fornecedor">Fornecedor</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
-            <input type="text" id="phone" placeholder="Telefone detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
-          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
+              <input type="text" id="phone" placeholder="Telefone detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+            </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
-            <input type="email" id="email" placeholder="Email detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+              <input type="email" id="email" placeholder="Email detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+            </div>
           </div>
 
           <div class="flex items-center gap-2 pt-2">
@@ -128,13 +143,29 @@
 
     </div>
 
-    <!-- Tabela de Contactos -->
+    <!-- Tabela de Contactos com Filtro de Categoria -->
     <div class="glass-card p-6 rounded-2xl shadow-xl border border-white/40 space-y-4">
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-3">
         <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
           <i class="fa-solid fa-database text-blue-600"></i> Base de Dados Supabase
         </h2>
-        <input type="text" id="searchInput" placeholder="Pesquisar..." class="w-full sm:w-64 p-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500">
+
+        <!-- NOVO: Controlo de Pesquisa e Filtro de Categoria -->
+        <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          <!-- Filtro Por Tipo -->
+          <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
+            <i class="fa-solid fa-filter text-slate-400 pl-1"></i>
+            <select id="filterTipo" class="bg-transparent font-bold outline-none text-slate-700 cursor-pointer">
+              <option value="Todos">Todos os Tipos</option>
+              <option value="Potencial Cliente">Potencial Cliente</option>
+              <option value="Cliente">Cliente</option>
+              <option value="Fornecedor">Fornecedor</option>
+            </select>
+          </div>
+
+          <!-- Pesquisa por Texto -->
+          <input type="text" id="searchInput" placeholder="Pesquisar nome/empresa..." class="w-full md:w-64 p-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500">
+        </div>
       </div>
 
       <div class="overflow-x-auto">
@@ -142,6 +173,7 @@
           <thead class="bg-slate-100/80 border-b border-slate-200 uppercase text-[10px] font-extrabold text-slate-500">
             <tr>
               <th class="p-3">Nome</th>
+              <th class="p-3">Tipo</th>
               <th class="p-3">Empresa</th>
               <th class="p-3">Telefone</th>
               <th class="p-3">Email</th>
@@ -149,7 +181,7 @@
             </tr>
           </thead>
           <tbody id="contactsTableBody" class="divide-y divide-slate-100">
-            <tr><td colspan="5" class="p-4 text-center text-slate-400">A carregar contactos...</td></tr>
+            <tr><td colspan="6" class="p-4 text-center text-slate-400">A carregar contactos...</td></tr>
           </tbody>
         </table>
       </div>
@@ -176,6 +208,7 @@
     const parseRawBtn = document.getElementById('parseRawBtn');
     const contactForm = document.getElementById('contactForm');
     const searchInput = document.getElementById('searchInput');
+    const filterTipo = document.getElementById('filterTipo');
     const contactsTableBody = document.getElementById('contactsTableBody');
 
     let stream = null;
@@ -261,16 +294,14 @@
       parseRawTextToFields(rawTextArea.value);
     });
 
-    // Função rigorosa para remover aspas, numeração de linhas e símbolos das extremidades
     function sanitizeVal(str) {
       if (!str) return '';
       return str
-        .replace(/^[0-9\s|{}]+/g, '')               // Remove numeração de linha (ex: "1 {", "2 | ")
-        .replace(/^["'“”‘’:\s|,{}]+|["'“”‘’,;\s|{}]+$/g, '') // Remove aspas, vírgulas e colons das pontas
+        .replace(/^[0-9\s|{}]+/g, '')
+        .replace(/^["'“”‘’:\s|,{}]+|["'“”‘’,;\s|{}]+$/g, '')
         .trim();
     }
 
-    // Algoritmo robusto de mapeamento do texto bruto para os inputs
     function parseRawTextToFields(text) {
       if (!text) return;
 
@@ -279,27 +310,23 @@
       let phone = '';
       let email = '';
 
-      // Tratar cada linha individualmente limpando numeração de linhas do OCR
       const lines = text.split('\n').map(l => l.replace(/^[0-9\s|{}]+/g, '').trim()).filter(l => l.length > 0);
 
       lines.forEach(line => {
         const lower = line.toLowerCase();
 
-        // 1. Deteção de Email
         if (lower.includes('@') || lower.includes('mail')) {
           const emailMatch = line.match(/[a-zA-Z0-9._%+-]+(?:\s*@\s*)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
           if (emailMatch) {
             email = emailMatch[0].replace(/\s+/g, '');
           } else if (line.includes(':')) {
-            const parts = line.split(':');
-            const val = parts.slice(1).join(':').replace(/\s+/g, '');
+            const val = line.split(':').slice(1).join(':').replace(/\s+/g, '');
             if (val.includes('@') || val.includes('.')) {
               email = val.replace(/[^a-zA-Z0-9._%+-@]/g, '');
             }
           }
         }
 
-        // 2. Deteção de Telefone
         if (lower.includes('phone') || lower.includes('tel') || lower.includes('mobile') || lower.includes('+351') || /\d{9}/.test(line)) {
           const phoneMatch = line.match(/(?:\+351\s*)?(?:9[1236]|2\d)[\s.-]?\d{3}[\s.-]?\d{3,4}|\+\d{1,3}[\s.-]?\d{6,12}|\b\d{9}\b/);
           if (phoneMatch) {
@@ -309,14 +336,12 @@
           }
         }
 
-        // 3. Deteção de Nome
         if (lower.includes('name') || lower.includes('nome')) {
           if (line.includes(':')) {
             name = line.split(':').slice(1).join(':');
           }
         }
 
-        // 4. Deteção de Empresa/Cargo (inclui erros OCR típicos de JSON como "he", "tle", "title")
         if (lower.includes('company') || lower.includes('title') || lower.includes('empresa') || lower.includes('cargo') || lower.includes('he"') || lower.includes('he:')) {
           if (line.includes(':')) {
             company = line.split(':').slice(1).join(':');
@@ -324,7 +349,6 @@
         }
       });
 
-      // Global Fallbacks se as chaves exatas não forem encontradas
       if (!email) {
         const em = text.match(/[a-zA-Z0-9._%+-]+(?:\s*@\s*)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
         if (em) email = em[0].replace(/\s+/g, '');
@@ -344,57 +368,76 @@
         });
 
         if (!name && cleanLines.length > 0) {
-          const lineName = cleanLines[0].includes(':') ? cleanLines[0].split(':').slice(1).join(':') : cleanLines[0];
-          name = lineName;
+          name = cleanLines[0].includes(':') ? cleanLines[0].split(':').slice(1).join(':') : cleanLines[0];
         }
         if (!company && cleanLines.length > 1) {
-          const lineCompany = cleanLines[1].includes(':') ? cleanLines[1].split(':').slice(1).join(':') : cleanLines[1];
-          company = lineCompany;
+          company = cleanLines[1].includes(':') ? cleanLines[1].split(':').slice(1).join(':') : cleanLines[1];
         }
       }
 
-      // Preenchimento com limpeza final de todas as aspas e símbolos
       document.getElementById('name').value = sanitizeVal(name);
       document.getElementById('company').value = sanitizeVal(company);
       document.getElementById('phone').value = sanitizeVal(phone);
       document.getElementById('email').value = sanitizeVal(email);
     }
 
-    // Carregar Contactos do Supabase
-    async function loadContacts(query = '') {
+    // Carregar e Filtrar Contactos no Supabase
+    async function loadContacts() {
       try {
         let req = supabaseClient.from('contacts').select('*').order('id', { ascending: false });
 
-        if (query) {
-          req = req.or(`name.ilike.%${query}%,company.ilike.%${query}%`);
+        const searchVal = searchInput.value.trim();
+        const tipoVal = filterTipo.value;
+
+        // Filtro por Categoria (Potencial Cliente / Cliente / Fornecedor)
+        if (tipoVal !== 'Todos') {
+          req = req.eq('tipo', tipoVal);
+        }
+
+        // Filtro por Pesquisa de Texto
+        if (searchVal) {
+          req = req.or(`name.ilike.%${searchVal}%,company.ilike.%${searchVal}%`);
         }
 
         const { data: contacts, error } = await req;
         if (error) throw error;
 
         if (!contacts || contacts.length === 0) {
-          contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum contacto guardado na base de dados.</td></tr>';
+          contactsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">Nenhum contacto encontrado para os filtros selecionados.</td></tr>';
           return;
         }
 
-        contactsTableBody.innerHTML = contacts.map(c => `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="p-3 font-bold text-slate-800">${escapeHtml(c.name)}</td>
-            <td class="p-3 text-slate-600">${escapeHtml(c.company || '-')}</td>
-            <td class="p-3 text-slate-600">${escapeHtml(c.phone || '-')}</td>
-            <td class="p-3 text-slate-600">${escapeHtml(c.email || '-')}</td>
-            <td class="p-3 text-right space-x-1">
-              <button onclick="editContact(${c.id}, '${escapeHtml(c.name)}', '${escapeHtml(c.company)}', '${escapeHtml(c.phone)}', '${escapeHtml(c.email)}')" class="p-1.5 text-blue-600 hover:text-blue-800"><i class="fa-solid fa-pen"></i></button>
-              <button onclick="deleteContact(${c.id})" class="p-1.5 text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
-            </td>
-          </tr>
-        `).join('');
+        contactsTableBody.innerHTML = contacts.map(c => {
+          // Badge visual por tipo de contacto
+          let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
+          if (c.tipo === 'Potencial Cliente') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+          if (c.tipo === 'Cliente') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+          if (c.tipo === 'Fornecedor') badgeColor = 'bg-purple-50 text-purple-700 border-purple-200';
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-3 font-bold text-slate-800">${escapeHtml(c.name)}</td>
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}">
+                  ${escapeHtml(c.tipo || 'Potencial Cliente')}
+                </span>
+              </td>
+              <td class="p-3 text-slate-600">${escapeHtml(c.company || '-')}</td>
+              <td class="p-3 text-slate-600">${escapeHtml(c.phone || '-')}</td>
+              <td class="p-3 text-slate-600">${escapeHtml(c.email || '-')}</td>
+              <td class="p-3 text-right space-x-1">
+                <button onclick="editContact(${c.id}, '${escapeHtml(c.name)}', '${escapeHtml(c.company)}', '${escapeHtml(c.phone)}', '${escapeHtml(c.email)}', '${escapeHtml(c.tipo)}')" class="p-1.5 text-blue-600 hover:text-blue-800"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteContact(${c.id})" class="p-1.5 text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+          `;
+        }).join('');
       } catch (err) {
-        contactsTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar do Supabase. Verifique se a tabela "contacts" está criada.</td></tr>';
+        contactsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar do Supabase. Verifique se a coluna "tipo" foi criada na tabela.</td></tr>';
       }
     }
 
-    // Submeter Formulário para o Supabase
+    // Guardar / Atualizar Contacto com o campo 'tipo'
     contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -404,6 +447,7 @@
         company: document.getElementById('company').value || null,
         phone: document.getElementById('phone').value || null,
         email: document.getElementById('email').value || null,
+        tipo: document.getElementById('tipo').value // Guarda o Tipo no Supabase
       };
 
       let result;
@@ -418,13 +462,14 @@
       } else {
         showStatus('Contacto guardado com sucesso!', 'success');
         contactForm.reset();
+        document.getElementById('tipo').value = 'Potencial Cliente';
         rawTextArea.value = '';
         document.getElementById('contactId').value = '';
         loadContacts();
       }
     });
 
-    // Eliminar do Supabase
+    // Eliminar
     async function deleteContact(id) {
       if (!confirm('Deseja eliminar este contacto?')) return;
       const { error } = await supabaseClient.from('contacts').delete().eq('id', id);
@@ -432,22 +477,27 @@
       else loadContacts();
     }
 
-    window.editContact = (id, name, company, phone, email) => {
+    // Editar Contacto
+    window.editContact = (id, name, company, phone, email, tipo) => {
       document.getElementById('contactId').value = id;
       document.getElementById('name').value = name === 'null' ? '' : name;
       document.getElementById('company').value = company === 'null' ? '' : company;
       document.getElementById('phone').value = phone === 'null' ? '' : phone;
       document.getElementById('email').value = email === 'null' ? '' : email;
+      document.getElementById('tipo').value = (tipo && tipo !== 'null') ? tipo : 'Potencial Cliente';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     document.getElementById('resetBtn').addEventListener('click', () => {
       contactForm.reset();
+      document.getElementById('tipo').value = 'Potencial Cliente';
       rawTextArea.value = '';
       document.getElementById('contactId').value = '';
     });
 
-    searchInput.addEventListener('input', (e) => loadContacts(e.target.value));
+    // Eventos de Filtro e Pesquisa
+    searchInput.addEventListener('input', loadContacts);
+    filterTipo.addEventListener('change', loadContacts);
 
     function showStatus(msg, type) {
       statusDiv.classList.remove('hidden', 'bg-blue-50', 'text-blue-700', 'border-blue-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200', 'bg-rose-50', 'text-rose-700', 'border-rose-200');
