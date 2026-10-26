@@ -237,13 +237,11 @@
       reader.readAsDataURL(file);
     });
 
-    // Pré-processamento de imagem para aumentar o contraste antes do OCR
     function processAndRunOCR(canvas) {
       const ctx = canvas.getContext('2d');
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imgData.data;
 
-      // Aumento de contraste e filtro de cinzento para eliminar sombras
       for (let i = 0; i < data.length; i += 4) {
         const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
         const contrast = 1.2;
@@ -258,7 +256,6 @@
       runOCR(canvas.toDataURL('image/jpeg', 0.95));
     }
 
-    // Leitura via Tesseract
     async function runOCR(imageSrc) {
       showStatus('A ler texto do cartão com Tesseract OCR...', 'info');
       try {
@@ -283,7 +280,15 @@
       parseRawTextToFields(rawTextArea.value);
     });
 
-    // Algoritmo de filtragem e mapeamento para os campos
+    // Função de limpeza estrita de aspas e carateres de sintaxe
+    function cleanValue(str) {
+      if (!str) return '';
+      return str
+        .replace(/^["'“”‘’:\s|,]+|["'“”‘’,;\s|]+$/g, '') // Remove aspas, dois pontos e vírgulas das extremidades
+        .trim();
+    }
+
+    // Algoritmo de mapeamento inteligente
     function parseRawTextToFields(text) {
       if (!text) return;
 
@@ -292,55 +297,58 @@
       let phone = '';
       let email = '';
 
-      // 1. Extrair Email
-      const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-      if (emailMatch) email = emailMatch[0];
-
-      // 2. Extrair Telefone
-      const phoneMatch = text.match(/(?:\+351\s*)?(?:9[1236]|2\d)[\s.-]?\d{3}[\s.-]?\d{3,4}|\b\d{9}\b/);
-      if (phoneMatch) phone = phoneMatch[0].trim();
-
-      // 3. Suporte a sintaxe de Chaves JSON ("name": "...", "title": "...")
-      const jsonName = text.match(/["']?name["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
-      const jsonCompany = text.match(/["']?(?:title|company)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
-      const jsonEmail = text.match(/["']?email["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
-      const jsonPhone = text.match(/["']?(?:phone|mobile|tel)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
-
-      if (jsonName) name = jsonName[1].trim();
-      if (jsonCompany) company = jsonCompany[1].trim();
-      if (jsonEmail && !email) email = jsonEmail[1].trim();
-      if (jsonPhone && !phone) phone = jsonPhone[1].trim();
-
-      // 4. Limpeza avançada de ruído para cartões convencionais
-      if (!name || !company) {
-        const rawLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-        const cleanLines = rawLines.map(line => {
-          return line.replace(/^[0-9]+\s*/, '')
-                     .replace(/["'{},]/g, '')
-                     .replace(/[^a-zA-Z0-9áàâãéèêíóòôõúçÁÀÂÃÉÈÍÓÒÔÕÚÇ@.\s\-\+]/g, '')
-                     .trim();
-        }).filter(line => {
-          if (line.length < 3) return false;
-          if (email && line.includes(email)) return false;
-          if (phone && line.includes(phone)) return false;
-          
-          // Descartar linhas compostas por ruído de caracteres soltos (ex: "EX / Tt -")
-          const words = line.split(/\s+/);
-          const singleLetters = words.filter(w => w.length === 1).length;
-          if (singleLetters > 2 && singleLetters / words.length > 0.4) return false;
-          
-          return true;
-        });
-
-        if (!name && cleanLines.length > 0) name = cleanLines[0];
-        if (!company && cleanLines.length > 1) company = cleanLines[1];
+      // 1. Extrair EMAIL (Filtro por Regex direto + Fallback por chaves JSON "mail"/"email")
+      const cleanedForEmail = text.replace(/(\w+)\s*@\s*(\w+)/g, '$1@$2');
+      const emailMatch = cleanedForEmail.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (emailMatch) {
+        email = emailMatch[0];
+      } else {
+        const jsonEmail = text.match(/["']?(?:email|mail|e-mail)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+        if (jsonEmail) email = cleanValue(jsonEmail[1]);
       }
 
-      document.getElementById('name').value = name;
-      document.getElementById('company').value = company;
-      document.getElementById('phone').value = phone;
-      document.getElementById('email').value = email;
+      // 2. Extrair TELEFONE
+      const phoneMatch = text.match(/(?:\+351\s*)?(?:9[1236]|2\d)[\s.-]?\d{3}[\s.-]?\d{3,4}|\+\d{1,3}[\s.-]?\d{6,12}|\b\d{9}\b/);
+      if (phoneMatch) {
+        phone = phoneMatch[0].trim();
+      } else {
+        const jsonPhone = text.match(/["']?(?:phone|mobile|tel|telefone)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+        if (jsonPhone) phone = cleanValue(jsonPhone[1]);
+      }
+
+      // 3. Extrair NOME (Chaves JSON "name"/"nome")
+      const jsonName = text.match(/["']?(?:name|nome)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+      if (jsonName) {
+        name = cleanValue(jsonName[1]);
+      }
+
+      // 4. Extrair EMPRESA / CARGO (Chaves JSON "company"/"title"/"empresa"/"cargo" + erros OCR como "he", "tle")
+      const jsonCompany = text.match(/["']?(?:company|title|empresa|cargo|he|tle|tfe)["']?\s*:\s*["']?([^"',\n\}]+)["']?/i);
+      if (jsonCompany) {
+        company = cleanValue(jsonCompany[1]);
+      }
+
+      // 5. Fallback para cartões não-JSON
+      if (!name || !company) {
+        const lines = text.split('\n')
+          .map(l => l.replace(/^[0-9]+\s*\|?\s*/, '').trim())
+          .filter(l => l.length > 2 && !l.startsWith('{') && !l.startsWith('}'));
+
+        if (!name && lines.length > 0) {
+          const firstLine = lines[0].replace(/.*:\s*/, '');
+          name = cleanValue(firstLine);
+        }
+        if (!company && lines.length > 1) {
+          const secondLine = lines[1].replace(/.*:\s*/, '');
+          company = cleanValue(secondLine);
+        }
+      }
+
+      // Atribuição final limpa aos campos do formulário
+      document.getElementById('name').value = cleanValue(name);
+      document.getElementById('company').value = cleanValue(company);
+      document.getElementById('phone').value = cleanValue(phone);
+      document.getElementById('email').value = cleanValue(email);
     }
 
     // Carregar Contactos do Supabase
