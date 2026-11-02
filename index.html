@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BizCard OCR v2 - Gestão de Contactos & Categorias</title>
+  <title>BizCard OCR v2 - Gestão Acessível de Contactos</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,32 +15,38 @@
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .glass-card {
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(229, 231, 235, 0.8);
+      border: 1px solid rgba(203, 213, 225, 0.9);
+    }
+    /* Estilo adicional para suporte ao estado :focus-within na label do ficheiro */
+    .file-label-focus:focus-within {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-800 min-h-screen relative overflow-x-hidden pb-12">
+<body class="bg-slate-900 text-slate-900 min-h-screen relative overflow-x-hidden pb-12">
 
-  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+  <!-- Fundo decorativo (oculto a leitores de ecrã) -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
     <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/30 rounded-full blur-3xl"></div>
     <div class="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
   </div>
 
-  <div class="relative z-10 max-w-6xl mx-auto px-4 pt-6 space-y-6">
+  <main class="relative z-10 max-w-6xl mx-auto px-4 pt-6 space-y-6">
     
-    <!-- Cabeçalho -->
-    <header class="glass-card p-6 rounded-2xl shadow-2xl flex justify-between items-center border border-white/20">
+    <!-- Cabeçalho Principal -->
+    <header class="glass-card p-6 rounded-2xl shadow-2xl flex flex-col sm:flex-row justify-between items-center gap-4 border border-white/20">
       <div class="flex items-center space-x-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-500/30">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-700 flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-500/30" aria-hidden="true">
           <i class="fa-solid fa-users-gear"></i>
         </div>
         <div>
-          <h1 class="text-2xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            BizCard OCR <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold align-middle">v2.0</span>
+          <h1 class="text-2xl font-extrabold text-slate-900">
+            BizCard OCR <span class="text-xs px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold align-middle border border-blue-300">v2.0 Acessível</span>
           </h1>
-          <p class="text-xs font-medium text-slate-500">Gestão de Contactos, Categorias e Leitura OCR</p>
+          <p class="text-xs font-semibold text-slate-700">Gestão de Contactos, Categorias e Leitura OCR (WCAG 2.1 AA)</p>
         </div>
       </div>
     </header>
@@ -48,69 +54,69 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       <!-- Captura e Texto Bruto -->
-      <div class="lg:col-span-6 glass-card p-6 rounded-2xl shadow-xl space-y-4 border border-white/40">
-        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-camera text-blue-600"></i> 1. Captura & Leitura
+      <section class="lg:col-span-6 glass-card p-6 rounded-2xl shadow-xl space-y-4 border border-slate-200" aria-labelledby="sec1-title">
+        <h2 id="sec1-title" class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-camera text-blue-700" aria-hidden="true"></i> 1. Captura &amp; Leitura
         </h2>
 
         <!-- Viewfinder da Câmara -->
         <div id="cameraContainer" class="relative bg-slate-950 rounded-xl overflow-hidden h-48 hidden flex items-center justify-center border border-slate-800">
-          <video id="video" class="w-full h-full object-cover" autoplay playsinline></video>
-          <button id="snapBtn" class="absolute bottom-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-bold text-xs shadow-lg flex items-center gap-2">
-            <i class="fa-solid fa-camera"></i> Fotografar
+          <video id="video" class="w-full h-full object-cover" autoplay playsinline aria-label="Pré-visualização da câmara"></video>
+          <button id="snapBtn" type="button" class="absolute bottom-3 bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-full font-bold text-xs shadow-lg flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-900">
+            <i class="fa-solid fa-camera" aria-hidden="true"></i> Fotografar
           </button>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <button id="toggleCameraBtn" class="py-2.5 px-4 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 border border-blue-200 shadow-sm transition text-xs flex items-center justify-center gap-2">
-            <i class="fa-solid fa-video"></i> <span>Câmara</span>
+          <button id="toggleCameraBtn" type="button" class="py-2.5 px-4 bg-blue-100 text-blue-900 font-bold rounded-xl hover:bg-blue-200 border border-blue-300 shadow-sm transition text-xs flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2">
+            <i class="fa-solid fa-video text-blue-700" aria-hidden="true"></i> <span>Abrir Câmara</span>
           </button>
-          <label class="py-2.5 px-4 bg-slate-50 text-slate-700 font-bold rounded-xl hover:bg-slate-100 border border-slate-200 shadow-sm text-center cursor-pointer transition text-xs flex items-center justify-center gap-2">
-            <i class="fa-solid fa-upload text-indigo-600"></i> <span>Ficheiro</span>
-            <input type="file" id="fileInput" accept="image/*" class="hidden">
+          <label class="file-label-focus py-2.5 px-4 bg-slate-100 text-slate-900 font-bold rounded-xl hover:bg-slate-200 border border-slate-300 shadow-sm text-center cursor-pointer transition text-xs flex items-center justify-center gap-2">
+            <i class="fa-solid fa-upload text-indigo-700" aria-hidden="true"></i> <span>Carregar Ficheiro</span>
+            <input type="file" id="fileInput" accept="image/*" class="sr-only" aria-label="Carregar ficheiro de imagem de cartão de visita">
           </label>
         </div>
 
-        <div id="status" class="hidden text-xs font-semibold text-center p-2.5 rounded-xl"></div>
+        <!-- Região Ativa ARIA para Notificação de Leitores de Ecrã -->
+        <div id="status" role="status" aria-live="polite" class="hidden text-xs font-bold text-center p-3 rounded-xl"></div>
 
         <!-- Caixa de Texto Bruto Lido pelo OCR -->
         <div class="space-y-2">
           <div class="flex justify-between items-center">
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <label for="rawText" class="block text-xs font-bold text-slate-800 uppercase tracking-wider">
               Texto Bruto Extraído (OCR)
             </label>
-            <button type="button" id="parseRawBtn" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 underline">
-              <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Mapear Campos
+            <button type="button" id="parseRawBtn" class="text-xs font-bold text-blue-700 hover:text-blue-900 underline focus:outline-none focus:ring-2 focus:ring-blue-700 rounded-sm">
+              <i class="fa-solid fa-wand-magic-sparkles me-1" aria-hidden="true"></i> Mapear Campos
             </button>
           </div>
-          <textarea id="rawText" rows="6" placeholder="O texto reconhecido no cartão aparecerá aqui..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition resize-y"></textarea>
+          <textarea id="rawText" rows="6" placeholder="O texto reconhecido no cartão aparecerá aqui..." class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-1 transition resize-y"></textarea>
         </div>
-      </div>
+      </section>
 
-      <!-- Formulário Mapeado com Novo Campo Tipo de Contacto -->
-      <div class="lg:col-span-6 glass-card p-6 rounded-2xl shadow-xl border border-white/40 space-y-4">
-        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-id-card text-indigo-600"></i> 2. Campos Organizados
+      <!-- Formulário Mapeado com Campos Acessíveis -->
+      <section class="lg:col-span-6 glass-card p-6 rounded-2xl shadow-xl border border-slate-200 space-y-4" aria-labelledby="sec2-title">
+        <h2 id="sec2-title" class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-id-card text-indigo-700" aria-hidden="true"></i> 2. Campos Organizados
         </h2>
 
-        <form id="contactForm" class="space-y-3">
+        <form id="contactForm" class="space-y-3.5" aria-label="Formulário de dados do contacto">
           <input type="hidden" id="contactId">
           
           <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome *</label>
-            <input type="text" id="name" required placeholder="Nome detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+            <label for="name" class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Nome *</label>
+            <input type="text" id="name" required placeholder="ex.: Michael Teixeira" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-1 transition text-xs font-medium">
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Empresa / Cargo</label>
-              <input type="text" id="company" placeholder="Empresa detetada..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+              <label for="company" class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Empresa / Cargo</label>
+              <input type="text" id="company" placeholder="ex.: CEO Digitextus" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-1 transition text-xs font-medium">
             </div>
 
-            <!-- NOVO CAMPO: Tipo de Contacto -->
             <div>
-              <label class="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">Tipo de Contacto *</label>
-              <select id="tipo" required class="w-full p-2.5 bg-blue-50/60 border border-blue-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-bold text-slate-700">
+              <label for="tipo" class="block text-xs font-bold text-blue-900 uppercase tracking-wider mb-1">Tipo de Contacto *</label>
+              <select id="tipo" required class="w-full p-2.5 bg-blue-50 border border-blue-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-1 transition text-xs font-bold">
                 <option value="Potencial Cliente">Potencial Cliente</option>
                 <option value="Cliente">Cliente</option>
                 <option value="Fornecedor">Fornecedor</option>
@@ -120,42 +126,43 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
-              <input type="text" id="phone" placeholder="Telefone detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+              <label for="phone" class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Telefone</label>
+              <input type="text" id="phone" placeholder="ex.: +351 967 605 414" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-1 transition text-xs font-medium">
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
-              <input type="email" id="email" placeholder="Email detetado..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition text-xs font-medium">
+              <label for="email" class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Email</label>
+              <input type="email" id="email" placeholder="ex.: contacto@empresa.pt" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-1 transition text-xs font-medium">
             </div>
           </div>
 
           <div class="flex items-center gap-2 pt-2">
-            <button type="submit" class="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-md hover:scale-[1.01] active:scale-95 transition-all text-xs flex items-center justify-center gap-2">
-              <i class="fa-solid fa-floppy-disk"></i> Guardar no Supabase
+            <button type="submit" class="flex-1 py-3 px-4 bg-gradient-to-r from-blue-700 to-indigo-700 text-white font-bold rounded-xl shadow-md hover:from-blue-800 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2 transition-all text-xs flex items-center justify-center gap-2">
+              <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar no Supabase
             </button>
-            <button type="button" id="resetBtn" class="py-3 px-4 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition text-xs">
+            <button type="button" id="resetBtn" class="py-3 px-4 bg-slate-200 text-slate-800 font-bold rounded-xl hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2 transition text-xs">
               Limpar
             </button>
           </div>
         </form>
-      </div>
+      </section>
 
     </div>
 
-    <!-- Tabela de Contactos com Filtro de Categoria -->
-    <div class="glass-card p-6 rounded-2xl shadow-xl border border-white/40 space-y-4">
+    <!-- Tabela de Contactos com Filtro Acessível -->
+    <section class="glass-card p-6 rounded-2xl shadow-xl border border-slate-200 space-y-4" aria-labelledby="sec3-title">
       <div class="flex flex-col md:flex-row justify-between items-center gap-3">
-        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-database text-blue-600"></i> Base de Dados Supabase
+        <h2 id="sec3-title" class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-database text-blue-700" aria-hidden="true"></i> Base de Dados Supabase
         </h2>
 
-        <!-- NOVO: Controlo de Pesquisa e Filtro de Categoria -->
         <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           <!-- Filtro Por Tipo -->
-          <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
-            <i class="fa-solid fa-filter text-slate-400 pl-1"></i>
-            <select id="filterTipo" class="bg-transparent font-bold outline-none text-slate-700 cursor-pointer">
+          <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-300 text-xs">
+            <label for="filterTipo" class="font-bold text-slate-800 flex items-center gap-1">
+              <i class="fa-solid fa-filter text-slate-600" aria-hidden="true"></i> Filtrar:
+            </label>
+            <select id="filterTipo" class="bg-transparent font-bold text-slate-900 outline-none cursor-pointer focus:ring-2 focus:ring-blue-700 rounded-md">
               <option value="Todos">Todos os Tipos</option>
               <option value="Potencial Cliente">Potencial Cliente</option>
               <option value="Cliente">Cliente</option>
@@ -164,35 +171,37 @@
           </div>
 
           <!-- Pesquisa por Texto -->
-          <input type="text" id="searchInput" placeholder="Pesquisar nome/empresa..." class="w-full md:w-64 p-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500">
+          <div class="w-full md:w-64">
+            <label for="searchInput" class="sr-only">Pesquisar contactos por nome ou empresa</label>
+            <input type="text" id="searchInput" placeholder="Pesquisar nome/empresa..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-700">
+          </div>
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-100/80 border-b border-slate-200 uppercase text-[10px] font-extrabold text-slate-500">
+      <div class="overflow-x-auto focus:outline-none focus:ring-2 focus:ring-blue-700 rounded-xl" tabindex="0" aria-label="Tabela de contactos com deslocamento horizontal se necessário">
+        <table class="w-full text-left text-xs" aria-label="Lista de contactos registados">
+          <thead class="bg-slate-100 border-b border-slate-300 uppercase text-[10px] font-extrabold text-slate-800">
             <tr>
-              <th class="p-3">Nome</th>
-              <th class="p-3">Tipo</th>
-              <th class="p-3">Empresa</th>
-              <th class="p-3">Telefone</th>
-              <th class="p-3">Email</th>
-              <th class="p-3 text-right">Ações</th>
+              <th scope="col" class="p-3">Nome</th>
+              <th scope="col" class="p-3">Tipo</th>
+              <th scope="col" class="p-3">Empresa</th>
+              <th scope="col" class="p-3">Telefone</th>
+              <th scope="col" class="p-3">Email</th>
+              <th scope="col" class="p-3 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody id="contactsTableBody" class="divide-y divide-slate-100">
-            <tr><td colspan="6" class="p-4 text-center text-slate-400">A carregar contactos...</td></tr>
+          <tbody id="contactsTableBody" class="divide-y divide-slate-200">
+            <tr><td colspan="6" class="p-4 text-center text-slate-700 font-medium">A carregar contactos...</td></tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
 
-  </div>
+  </main>
 
-  <canvas id="canvas" class="hidden"></canvas>
+  <canvas id="canvas" class="hidden" aria-hidden="true"></canvas>
 
   <script>
-    // CONFIGURAÇÕES DO SUPABASE
     const SUPABASE_URL = "https://yhonxysuusxuvjkcpize.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_sEFa9_zBdnkXGaqpmoymXA_qm33wCpo"; 
 
@@ -223,7 +232,8 @@
           });
           video.srcObject = stream;
           cameraContainer.classList.remove('hidden');
-          toggleCameraBtn.innerHTML = '<i class="fa-solid fa-xmark text-red-500"></i> <span>Fechar Câmara</span>';
+          toggleCameraBtn.innerHTML = '<i class="fa-solid fa-xmark text-red-600" aria-hidden="true"></i> <span>Fechar Câmara</span>';
+          showStatus('Câmara aberta. Aponta para o cartão de visita.', 'info');
         } catch (err) {
           showStatus('Não foi possível aceder à câmara.', 'error');
         }
@@ -236,7 +246,7 @@
         stream = null;
       }
       cameraContainer.classList.add('hidden');
-      toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video text-blue-600"></i> <span>Câmara</span>';
+      toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video text-blue-700" aria-hidden="true"></i> <span>Abrir Câmara</span>';
     }
 
     snapBtn.addEventListener('click', () => {
@@ -277,17 +287,17 @@
         const text = result.data.text;
 
         rawTextArea.value = text;
-        showStatus('Texto lido com sucesso!', 'success');
+        showStatus('Texto lido com sucesso! Campos automaticamente preenchidos abaixo.', 'success');
 
         parseRawTextToFields(text);
       } catch (err) {
-        showStatus('Erro ao ler a imagem.', 'error');
+        showStatus('Erro ao processar a imagem do cartão.', 'error');
       }
     }
 
     parseRawBtn.addEventListener('click', () => {
       parseRawTextToFields(rawTextArea.value);
-      showStatus('Campos re-mapeados a partir do texto bruto.', 'info');
+      showStatus('Campos atualizados a partir do texto bruto.', 'info');
     });
 
     rawTextArea.addEventListener('input', () => {
@@ -381,7 +391,6 @@
       document.getElementById('email').value = sanitizeVal(email);
     }
 
-    // Carregar e Filtrar Contactos no Supabase
     async function loadContacts() {
       try {
         let req = supabaseClient.from('contacts').select('*').order('id', { ascending: false });
@@ -389,12 +398,10 @@
         const searchVal = searchInput.value.trim();
         const tipoVal = filterTipo.value;
 
-        // Filtro por Categoria (Potencial Cliente / Cliente / Fornecedor)
         if (tipoVal !== 'Todos') {
           req = req.eq('tipo', tipoVal);
         }
 
-        // Filtro por Pesquisa de Texto
         if (searchVal) {
           req = req.or(`name.ilike.%${searchVal}%,company.ilike.%${searchVal}%`);
         }
@@ -403,41 +410,45 @@
         if (error) throw error;
 
         if (!contacts || contacts.length === 0) {
-          contactsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">Nenhum contacto encontrado para os filtros selecionados.</td></tr>';
+          contactsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-700 font-medium">Nenhum contacto encontrado para os filtros selecionados.</td></tr>';
           return;
         }
 
         contactsTableBody.innerHTML = contacts.map(c => {
-          // Badge visual por tipo de contacto
-          let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-          if (c.tipo === 'Potencial Cliente') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
-          if (c.tipo === 'Cliente') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-          if (c.tipo === 'Fornecedor') badgeColor = 'bg-purple-50 text-purple-700 border-purple-200';
+          let badgeColor = 'bg-slate-200 text-slate-900 border-slate-300';
+          if (c.tipo === 'Potencial Cliente') badgeColor = 'bg-amber-100 text-amber-950 border-amber-300';
+          if (c.tipo === 'Cliente') badgeColor = 'bg-emerald-100 text-emerald-950 border-emerald-300';
+          if (c.tipo === 'Fornecedor') badgeColor = 'bg-purple-100 text-purple-950 border-purple-300';
+
+          const safeName = escapeHtml(c.name);
 
           return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="p-3 font-bold text-slate-800">${escapeHtml(c.name)}</td>
+            <tr class="hover:bg-slate-100 transition">
+              <td class="p-3 font-bold text-slate-900">${safeName}</td>
               <td class="p-3">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}">
                   ${escapeHtml(c.tipo || 'Potencial Cliente')}
                 </span>
               </td>
-              <td class="p-3 text-slate-600">${escapeHtml(c.company || '-')}</td>
-              <td class="p-3 text-slate-600">${escapeHtml(c.phone || '-')}</td>
-              <td class="p-3 text-slate-600">${escapeHtml(c.email || '-')}</td>
+              <td class="p-3 text-slate-800">${escapeHtml(c.company || '-')}</td>
+              <td class="p-3 text-slate-800">${escapeHtml(c.phone || '-')}</td>
+              <td class="p-3 text-slate-800">${escapeHtml(c.email || '-')}</td>
               <td class="p-3 text-right space-x-1">
-                <button onclick="editContact(${c.id}, '${escapeHtml(c.name)}', '${escapeHtml(c.company)}', '${escapeHtml(c.phone)}', '${escapeHtml(c.email)}', '${escapeHtml(c.tipo)}')" class="p-1.5 text-blue-600 hover:text-blue-800"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteContact(${c.id})" class="p-1.5 text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
+                <button onclick="editContact(${c.id}, '${safeName}', '${escapeHtml(c.company)}', '${escapeHtml(c.phone)}', '${escapeHtml(c.email)}', '${escapeHtml(c.tipo)}')" aria-label="Editar contacto de ${safeName}" class="p-2 text-blue-700 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-700 rounded-lg">
+                  <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                </button>
+                <button onclick="deleteContact(${c.id}, '${safeName}')" aria-label="Eliminar contacto de ${safeName}" class="p-2 text-red-700 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-red-700 rounded-lg">
+                  <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                </button>
               </td>
             </tr>
           `;
         }).join('');
       } catch (err) {
-        contactsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500 font-semibold">Erro ao carregar do Supabase. Verifique se a coluna "tipo" foi criada na tabela.</td></tr>';
+        contactsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-700 font-bold">Erro ao carregar do Supabase. Verifique a coluna "tipo" na tabela.</td></tr>';
       }
     }
 
-    // Guardar / Atualizar Contacto com o campo 'tipo'
     contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -447,7 +458,7 @@
         company: document.getElementById('company').value || null,
         phone: document.getElementById('phone').value || null,
         email: document.getElementById('email').value || null,
-        tipo: document.getElementById('tipo').value // Guarda o Tipo no Supabase
+        tipo: document.getElementById('tipo').value
       };
 
       let result;
@@ -460,7 +471,7 @@
       if (result.error) {
         showStatus('Erro ao guardar no Supabase: ' + result.error.message, 'error');
       } else {
-        showStatus('Contacto guardado com sucesso!', 'success');
+        showStatus('Contacto guardado com sucesso na base de dados!', 'success');
         contactForm.reset();
         document.getElementById('tipo').value = 'Potencial Cliente';
         rawTextArea.value = '';
@@ -469,15 +480,17 @@
       }
     });
 
-    // Eliminar
-    async function deleteContact(id) {
-      if (!confirm('Deseja eliminar este contacto?')) return;
+    async function deleteContact(id, name) {
+      if (!confirm(`Deseja eliminar o contacto "${name}"?`)) return;
       const { error } = await supabaseClient.from('contacts').delete().eq('id', id);
-      if (error) alert('Erro ao eliminar: ' + error.message);
-      else loadContacts();
+      if (error) {
+        showStatus('Erro ao eliminar: ' + error.message, 'error');
+      } else {
+        showStatus(`Contacto "${name}" eliminado com sucesso!`, 'info');
+        loadContacts();
+      }
     }
 
-    // Editar Contacto
     window.editContact = (id, name, company, phone, email, tipo) => {
       document.getElementById('contactId').value = id;
       document.getElementById('name').value = name === 'null' ? '' : name;
@@ -485,6 +498,9 @@
       document.getElementById('phone').value = phone === 'null' ? '' : phone;
       document.getElementById('email').value = email === 'null' ? '' : email;
       document.getElementById('tipo').value = (tipo && tipo !== 'null') ? tipo : 'Potencial Cliente';
+      
+      showStatus(`A editar contacto de "${name}".`, 'info');
+      document.getElementById('name').focus();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -493,18 +509,18 @@
       document.getElementById('tipo').value = 'Potencial Cliente';
       rawTextArea.value = '';
       document.getElementById('contactId').value = '';
+      showStatus('Formulário limpo.', 'info');
     });
 
-    // Eventos de Filtro e Pesquisa
     searchInput.addEventListener('input', loadContacts);
     filterTipo.addEventListener('change', loadContacts);
 
     function showStatus(msg, type) {
-      statusDiv.classList.remove('hidden', 'bg-blue-50', 'text-blue-700', 'border-blue-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200', 'bg-rose-50', 'text-rose-700', 'border-rose-200');
+      statusDiv.classList.remove('hidden', 'bg-blue-100', 'text-blue-900', 'border-blue-300', 'bg-emerald-100', 'text-emerald-950', 'border-emerald-300', 'bg-rose-100', 'text-rose-950', 'border-rose-300');
       statusDiv.classList.add('border');
-      if (type === 'info') statusDiv.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
-      if (type === 'success') statusDiv.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
-      if (type === 'error') statusDiv.classList.add('bg-rose-50', 'text-rose-700', 'border-rose-200');
+      if (type === 'info') statusDiv.classList.add('bg-blue-100', 'text-blue-900', 'border-blue-300');
+      if (type === 'success') statusDiv.classList.add('bg-emerald-100', 'text-emerald-950', 'border-emerald-300');
+      if (type === 'error') statusDiv.classList.add('bg-rose-100', 'text-rose-950', 'border-rose-300');
       statusDiv.textContent = msg;
     }
 
